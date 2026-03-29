@@ -1,0 +1,20 @@
+.portfolio-page {
+  max-width: 1200px;
+}
+
+.page-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.portfolio-stats {
+  margin-bottom: var(--space-xl);
+}
+
+@media (max-width: 768px) {
+  .page-header-row {
+    flex-direction: column;
+    gap: var(--space-md);
+  }
+}
