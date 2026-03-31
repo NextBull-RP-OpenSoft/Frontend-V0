@@ -12,7 +12,9 @@ export default function PortfolioPage() {
 
   useEffect(() => {
     loadData();
-  }, []);
+    const interval = setInterval(loadData, 5000);
+    return () => clearInterval(interval);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadData = async () => {
     const [p, h, pl] = await Promise.all([

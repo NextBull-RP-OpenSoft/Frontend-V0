@@ -13,7 +13,9 @@ export default function AdminPage() {
   });
 
   useEffect(() => {
-    api.getEngineStats().then(setStats);
+    api.getEngineStats().then(setStats).catch(() => { });
+    const interval = setInterval(() => api.getEngineStats().then(setStats).catch(() => { }), 5000);
+    return () => clearInterval(interval);
   }, []);
 
   const handlePauseResume = async () => {

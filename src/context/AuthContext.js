@@ -8,6 +8,7 @@ export function AuthProvider({ children }) {
   const [token, setToken] = useState(localStorage.getItem('sb_token'));
   const [loading, setLoading] = useState(true);
 
+  // Fetch user profile when token is available
   useEffect(() => {
     if (token) {
       api.getUser().then(u => {
@@ -16,6 +17,7 @@ export function AuthProvider({ children }) {
       }).catch(() => {
         setToken(null);
         localStorage.removeItem('sb_token');
+        localStorage.removeItem('sb_refresh');
         setLoading(false);
       });
     } else {
@@ -23,19 +25,30 @@ export function AuthProvider({ children }) {
     }
   }, [token]);
 
+  // Listen for forced-logout events emitted by api.js on unrecoverable 401
+  useEffect(() => {
+    const handleForceLogout = () => {
+      setUser(null);
+      setToken(null);
+    };
+    window.addEventListener('auth:logout', handleForceLogout);
+    return () => window.removeEventListener('auth:logout', handleForceLogout);
+  }, []);
+
   const login = async (username, password) => {
     const res = await api.login(username, password);
     setToken(res.token);
     localStorage.setItem('sb_token', res.token);
-    localStorage.setItem('sb_refresh', res.refresh_token);
+    if (res.refresh_token) {
+      localStorage.setItem('sb_refresh', res.refresh_token);
+    }
     const u = await api.getUser();
     setUser(u);
     return u;
   };
 
   const register = async (username, email, password) => {
-    const res = await api.register(username, email, password);
-    return res;
+    return api.register(username, email, password);
   };
 
   const logout = () => {

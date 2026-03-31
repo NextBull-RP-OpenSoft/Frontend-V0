@@ -8,7 +8,9 @@ export default function BotsPage() {
   const [editConfig, setEditConfig] = useState('');
 
   useEffect(() => {
-    api.getBots().then(setBots);
+    api.getBots().then(setBots).catch(() => { });
+    const interval = setInterval(() => api.getBots().then(setBots).catch(() => { }), 10000);
+    return () => clearInterval(interval);
   }, []);
 
   const toggleBot = async (bot) => {

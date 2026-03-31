@@ -19,9 +19,13 @@ export default function OrdersPage() {
   const [orders, setOrders] = useState([]);
   const [activeTab, setActiveTab] = useState('all');
 
+  const loadOrders = () => api.getOrders().then(setOrders).catch(() => { });
+
   useEffect(() => {
-    api.getOrders().then(setOrders);
-  }, []);
+    loadOrders();
+    const interval = setInterval(loadOrders, 5000);
+    return () => clearInterval(interval);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const filtered = activeTab === 'all'
     ? orders
