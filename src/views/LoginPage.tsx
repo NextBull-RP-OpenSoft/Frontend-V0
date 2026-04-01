@@ -212,12 +212,11 @@ export default function LoginPage() {
             </p>
           </form>
 
-          <div style={{ margin: '20px 0', textAlign: 'center', color: 'var(--text-muted)' }}>
-            <span style={{ background: 'var(--bg-card)', padding: '0 10px', position: 'relative', top: '-10px' }}>OR</span>
-            <hr style={{ borderColor: 'var(--border-primary)', transform: 'translateY(-20px)', zIndex: -1, position: 'relative' }} />
+          <div className="auth-or-divider">
+            <span>OR</span>
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'center', paddingBottom: '30px' }}>
+          <div className="auth-google-btn">
             <GoogleLogin
               onSuccess={handleGoogleSuccess}
               onError={() => setError('Google Login Failed')}
