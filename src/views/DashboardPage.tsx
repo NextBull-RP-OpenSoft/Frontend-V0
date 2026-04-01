@@ -75,7 +75,10 @@ export default function DashboardPage() {
           if (sym === selectedSymbolRef.current) {
             setCurrentPrice(price);
 
-            if (candleIntervalRef.current === '1m' || candleIntervalRef.current === '5m') {
+            // ── Live candle update ──────────────────────────────────
+            // Push the new tick price into the last candle so the chart
+            // shows real-time price movement without waiting for REST poll.
+            if (['1s', '5s', '1m', '5m'].includes(candleIntervalRef.current)) {
               setCandles(prev => {
                 if (!prev || prev.length === 0) return prev;
                 const updated = [...prev];
@@ -131,11 +134,16 @@ export default function DashboardPage() {
       api.getHoldings().then(setHoldings).catch(() => { });
     }, 10000);
 
+    // Poll candles every 60s to pick up freshly flushed candles from the backend
+    // DISABLED for C++ engine integration: fetching REST candles overwrites the live WebSocket
+    // chart. The live chart now draws tick-by-tick from TRADE_PRINT events.
+    /*
     const candlePoll = setInterval(() => {
       api.getCandles(selectedSymbolRef.current, candleIntervalRef.current)
         .then(data => { if (data?.length) setCandles(data); })
         .catch(() => { });
     }, 60000);
+    */
 
     const tradePoll = setInterval(() => {
       api.getPublicTrades()
@@ -147,7 +155,7 @@ export default function DashboardPage() {
       unsub();
       clearInterval(obPoll);
       clearInterval(pnlPoll);
-      clearInterval(candlePoll);
+      // clearInterval(candlePoll);
       clearInterval(tradePoll);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
