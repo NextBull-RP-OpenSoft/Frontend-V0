@@ -9,7 +9,7 @@ import OrderBook from '../components/OrderBook';
 import OrderPanel from '../components/OrderPanel';
 import TradeHistory from '../components/TradeHistory';
 import PortfolioWidget from '../components/PortfolioWidget';
-import './DashboardPage.css';
+
 
 export default function DashboardPage() {
   const { selectedSymbol, setMarketStats } = useMarket();
@@ -166,41 +166,44 @@ export default function DashboardPage() {
   if (!selectedSymbol) return null;
 
   return (
-    <div className="dashboard-page" id="dashboard-page">
-      <div className="dashboard-grid">
-        <div className="dashboard-chart">
-          <CandlestickChart
-            candles={candles}
-            interval={candleInterval}
-            onIntervalChange={setCandleInterval}
-            symbol={selectedSymbol}
-          />
+    <div className="animate-fade-in" id="dashboard-page">
+      <div className="flex flex-col lg:flex-row gap-4">
+        {/* Main Column */}
+        <div className="flex-[1_1_100%] flex flex-col gap-4">
+          <div className="min-h-[450px]">
+            <CandlestickChart
+              candles={candles}
+              interval={candleInterval}
+              onIntervalChange={setCandleInterval}
+              symbol={selectedSymbol}
+            />
+          </div>
+          <div>
+            <TradeHistory trades={trades} symbol={selectedSymbol} />
+          </div>
         </div>
 
-        <div className="dashboard-orderbook">
-          <OrderBook orderBook={orderBook} />
-        </div>
-
-        <div className="dashboard-trades">
-          <TradeHistory trades={trades} symbol={selectedSymbol} />
-        </div>
-
-        <div className="dashboard-order-panel">
-          <OrderPanel
-            symbol={selectedSymbol}
-            currentPrice={currentPrice}
-            onSubmitOrder={handleSubmitOrder}
-            cashBalance={portfolio?.cash_balance}
-          />
-        </div>
-
-        <div className="dashboard-portfolio">
-          <PortfolioWidget
-            portfolio={portfolio}
-            holdings={holdings}
-            pnl={pnl}
-            compact={true}
-          />
+        {/* Sidebar Column */}
+        <div className="w-full lg:w-[320px] 2xl:w-[280px] flex flex-col gap-4">
+          <div className="max-h-[450px] lg:max-h-[400px] overflow-hidden">
+            <OrderBook orderBook={orderBook} />
+          </div>
+          <div>
+            <OrderPanel
+              symbol={selectedSymbol}
+              currentPrice={currentPrice}
+              onSubmitOrder={handleSubmitOrder}
+              cashBalance={portfolio?.cash_balance}
+            />
+          </div>
+          <div>
+            <PortfolioWidget
+              portfolio={portfolio}
+              holdings={holdings}
+              pnl={pnl}
+              compact={true}
+            />
+          </div>
         </div>
       </div>
     </div>

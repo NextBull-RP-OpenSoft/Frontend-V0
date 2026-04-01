@@ -9,7 +9,7 @@ let ws = null;
 let backoffMs = 1_000;
 let reconnectTimer = null;
 let activeSubscriptions = new Set();
-const listeners = new Set();
+const listeners = new Set<(msg: any) => void>();
 let intentionalClose = false;
 
 function notifyListeners(msg) {

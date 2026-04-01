@@ -4,13 +4,13 @@ import React, { useState, useEffect } from 'react';
 import { FileText, Zap, Clock, Activity, Play, Pause } from 'lucide-react';
 import * as api from '../services/api';
 import StatsCard from '../components/StatsCard';
-import './AdminPage.css';
+
 
 export default function AdminPage() {
   const [stats, setStats] = useState(null);
   const [marketPaused, setMarketPaused] = useState(false);
   const [assets, setAssets] = useState([]);
-  const [gbmParams, setGbmParams] = useState({});
+  const [gbmParams, setGbmParams] = useState<Record<string, { mu: number; sigma: number }>>({});
 
   useEffect(() => {
     api.getEngineStats().then(setStats).catch(() => { });
@@ -50,14 +50,14 @@ export default function AdminPage() {
   };
 
   return (
-    <div className="admin-page animate-fade-in" id="admin-page">
+    <div className="max-w-[1200px] animate-fade-in" id="admin-page">
       <div className="page-header">
         <h1>Admin Panel</h1>
         <p>Engine statistics and market controls</p>
       </div>
 
       {stats && (
-        <div className="grid-4 admin-stats">
+        <div className="grid-4 mb-8">
           <StatsCard
             title="Orders Submitted"
             value={stats.total_orders_submitted.toLocaleString()}
@@ -91,7 +91,7 @@ export default function AdminPage() {
       )}
 
       {stats && (
-        <div className="card admin-symbol-stats">
+        <div className="card mb-8">
           <div className="card-header">
             <h2>Orders & Trades by Symbol</h2>
           </div>
@@ -115,9 +115,9 @@ export default function AdminPage() {
                     <td className="mono">{orders.toLocaleString()}</td>
                     <td className="mono">{trades.toLocaleString()}</td>
                     <td>
-                      <div className="fill-rate">
-                        <div className="fill-rate-bar">
-                          <div className="fill-rate-fill" style={{ width: `${fillRate}%` }}></div>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 h-[6px] bg-[var(--bg-input)] rounded-[3px] overflow-hidden max-w-[120px]">
+                          <div className="h-full bg-[var(--accent)] rounded-[3px] transition-[width] duration-250 ease-in-out" style={{ width: `${fillRate}%` }}></div>
                         </div>
                         <span className="mono">{fillRate}%</span>
                       </div>
@@ -130,19 +130,19 @@ export default function AdminPage() {
         </div>
       )}
 
-      <div className="admin-controls-row">
-        <div className="card admin-market-control">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-6">
+        <div className="card flex flex-col">
           <div className="card-header">
             <h2>Market Control</h2>
             <span className={`badge ${marketPaused ? 'badge-sell' : 'badge-buy'}`}>
               {marketPaused ? 'PAUSED' : 'RUNNING'}
             </span>
           </div>
-          <p className="admin-description">
+          <p className="text-sm text-[var(--text-secondary)] mb-6 leading-[1.6]">
             Pause or resume the synthetic order generation engine.
           </p>
           <button
-            className={`btn btn-lg ${marketPaused ? 'btn-primary' : 'btn-sell'}`}
+            className={`btn btn-lg mt-auto ${marketPaused ? 'btn-primary' : 'btn-sell'}`}
             onClick={handlePauseResume}
             id="btn-pause-resume"
           >
@@ -155,16 +155,16 @@ export default function AdminPage() {
             <h2>GBM Parameters</h2>
             <span className="badge badge-accent">Price Simulation</span>
           </div>
-          <p className="admin-description">
+          <p className="text-sm text-[var(--text-secondary)] mb-6 leading-[1.6]">
             Adjust the Geometric Brownian Motion drift and volatility for each asset.
           </p>
-          <div className="gbm-params-grid">
+          <div className="flex flex-col gap-4">
             {Object.entries(gbmParams).map(([symbol, params]) => (
-              <div className="gbm-param-row" key={symbol}>
-                <span className="gbm-symbol">{symbol}</span>
-                <div className="gbm-inputs">
-                  <div className="gbm-input-group">
-                    <label>Drift</label>
+              <div className="flex items-center gap-4 p-2 bg-[var(--bg-input)] rounded-sm" key={symbol}>
+                <span className="font-bold text-[var(--accent)] text-base min-w-[50px]">{symbol}</span>
+                <div className="flex items-end gap-2 flex-1">
+                  <div className="flex-1">
+                    <label className="block text-xs text-[var(--text-muted)] mb-1 font-medium">Drift</label>
                     <input
                       type="number"
                       step="0.00001"
@@ -173,12 +173,12 @@ export default function AdminPage() {
                         ...prev,
                         [symbol]: { ...prev[symbol], mu: parseFloat(e.target.value) || 0 }
                       }))}
-                      className="mono"
+                      className="mono text-xs px-[10px] py-[8px]"
                       id={`gbm-mu-${symbol.toLowerCase()}`}
                     />
                   </div>
-                  <div className="gbm-input-group">
-                    <label>Volatility</label>
+                  <div className="flex-1">
+                    <label className="block text-xs text-[var(--text-muted)] mb-1 font-medium">Volatility</label>
                     <input
                       type="number"
                       step="0.001"
@@ -187,7 +187,7 @@ export default function AdminPage() {
                         ...prev,
                         [symbol]: { ...prev[symbol], sigma: parseFloat(e.target.value) || 0 }
                       }))}
-                      className="mono"
+                      className="mono text-xs px-[10px] py-[8px]"
                       id={`gbm-sigma-${symbol.toLowerCase()}`}
                     />
                   </div>

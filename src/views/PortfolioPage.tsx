@@ -5,7 +5,7 @@ import { DollarSign, Banknote, TrendingUp, BarChart3, RotateCcw } from 'lucide-r
 import * as api from '../services/api';
 import PortfolioWidget from '../components/PortfolioWidget';
 import StatsCard from '../components/StatsCard';
-import './PortfolioPage.css';
+
 
 export default function PortfolioPage() {
   const [portfolio, setPortfolio] = useState(null);
@@ -41,9 +41,9 @@ export default function PortfolioPage() {
   const totalHoldingsValue = holdings.reduce((s, h) => s + h.market_value, 0);
 
   return (
-    <div className="portfolio-page animate-fade-in" id="portfolio-page">
+    <div className="max-w-[1200px] animate-fade-in" id="portfolio-page">
       <div className="page-header">
-        <div className="page-header-row">
+        <div className="flex flex-col md:flex-row justify-between items-start gap-4 md:gap-0">
           <div>
             <h1>Portfolio</h1>
             <p>Manage your positions and track performance</p>
@@ -60,7 +60,7 @@ export default function PortfolioPage() {
         </div>
       </div>
 
-      <div className="grid-4 portfolio-stats">
+      <div className="grid-4 mb-8">
         <StatsCard
           title="Total Value"
           value={`$${((portfolio?.cash_balance || 0) + totalHoldingsValue).toLocaleString(undefined, { minimumFractionDigits: 2 })}`}

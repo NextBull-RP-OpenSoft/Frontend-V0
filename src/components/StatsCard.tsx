@@ -2,7 +2,7 @@ import React from 'react';
 import { ChevronUp, ChevronDown } from 'lucide-react';
 import './StatsCard.css';
 
-export default function StatsCard({ title, value, subtitle, icon, trend, trendValue, variant = 'default' }) {
+export default function StatsCard({ title, value, subtitle, icon, trend, trendValue, variant = 'default' }: { title: React.ReactNode, value: React.ReactNode, subtitle?: React.ReactNode, icon?: React.ReactNode, trend?: 'up' | 'down', trendValue?: React.ReactNode, variant?: 'default' | 'accent' | 'buy' | 'sell' }) {
   const isPositive = trend === 'up';
   const variantClass = variant === 'accent' ? 'stats-card-accent' :
                        variant === 'buy' ? 'stats-card-buy' :

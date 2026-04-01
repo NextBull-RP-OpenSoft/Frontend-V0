@@ -6,7 +6,7 @@ export default function PortfolioWidget({ portfolio, holdings, pnl, compact = fa
   const totalValue = (portfolio?.cash_balance || 0) +
     (holdings?.reduce((sum, h) => sum + h.market_value, 0) || 0);
 
-  const totalPnl = pnl?.total_pnl ?? (portfolio?.realized_pnl + portfolio?.unrealized_pnl) ?? 0;
+  const totalPnl = pnl?.total_pnl ?? ((portfolio?.realized_pnl || 0) + (portfolio?.unrealized_pnl || 0));
   const pnlPercent = totalValue > 0 ? (totalPnl / (totalValue - totalPnl) * 100) : 0;
   const isPositive = totalPnl >= 0;
 

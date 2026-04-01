@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Custom Canvas 2D Candlestick Chart Engine
  * Renders candles, volume histogram, moving averages, crosshair, and tooltips.

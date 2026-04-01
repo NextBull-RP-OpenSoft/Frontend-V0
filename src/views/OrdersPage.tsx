@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import * as api from '../services/api';
-import './OrdersPage.css';
+
 
 const STATUS_TABS = ['all', 'submitted', 'partial', 'filled', 'cancelled'];
 
@@ -48,23 +48,23 @@ export default function OrdersPage() {
   };
 
   return (
-    <div className="orders-page animate-fade-in" id="orders-page">
+    <div className="max-w-[1200px] animate-fade-in" id="orders-page">
       <div className="page-header">
         <h1>Orders</h1>
         <p>View and manage your trading orders</p>
       </div>
 
       {/* Filter Tabs */}
-      <div className="orders-tabs">
+      <div className="flex gap-1 mb-6 flex-wrap">
         {STATUS_TABS.map(tab => (
           <button
             key={tab}
-            className={`orders-tab ${activeTab === tab ? 'active' : ''}`}
+            className={`flex items-center gap-2 px-[18px] py-[10px] rounded-sm text-sm font-semibold text-[var(--text-secondary)] bg-[var(--bg-card)] border border-[var(--border-primary)] transition-all duration-150 hover:border-[var(--border-hover)] hover:text-[var(--text-primary)] ${activeTab === tab ? 'border-[var(--accent)] text-[var(--accent)] bg-[var(--accent-muted)]' : ''}`}
             onClick={() => setActiveTab(tab)}
             id={`orders-tab-${tab}`}
           >
             {tab.charAt(0).toUpperCase() + tab.slice(1)}
-            <span className="tab-count">
+            <span className="text-xs bg-[var(--accent-muted)] px-[7px] py-[1px] rounded-[10px] font-bold">
               {tab === 'all' ? orders.length : orders.filter(o => o.status === tab).length}
             </span>
           </button>
@@ -72,7 +72,7 @@ export default function OrdersPage() {
       </div>
 
       {/* Orders Table */}
-      <div className="card orders-table-container">
+      <div className="card overflow-x-auto">
         <table className="data-table" id="orders-table">
           <thead>
             <tr>
@@ -94,7 +94,7 @@ export default function OrdersPage() {
                   {formatDate(order.created_at)}
                 </td>
                 <td>
-                  <span className="order-symbol">{order.asset_symbol}</span>
+                  <span className="font-bold text-[var(--accent)]">{order.asset_symbol}</span>
                 </td>
                 <td>
                   <span className="badge badge-accent">{order.type}</span>
@@ -127,7 +127,7 @@ export default function OrdersPage() {
             ))}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan="9" className="empty-state">
+                <td colSpan={9} className="text-center py-12 text-[var(--text-muted)] text-sm">
                   No orders found
                 </td>
               </tr>

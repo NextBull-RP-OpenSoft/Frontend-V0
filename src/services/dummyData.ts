@@ -19,7 +19,7 @@ const ASSETS = [
 ];
 
 // Live-like prices that drift over time
-const priceState = {};
+const priceState: Record<string, number> = {};
 ASSETS.forEach(a => { priceState[a.symbol] = a.initial_price; });
 
 function getCurrentPrice(symbol) {

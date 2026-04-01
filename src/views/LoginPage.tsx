@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 import BullLogo from '../components/BullLogo';
-import './LoginPage.css';
+
 
 export default function LoginPage() {
   const [username, setUsername] = useState('');
@@ -34,20 +34,20 @@ export default function LoginPage() {
 
   return (
     <div className="auth-layout" id="login-page">
-      <div className="auth-card animate-fade-in">
-        <div className="auth-logo">
-          <BullLogo size={48} className="auth-logo-icon" />
-          <h1 className="auth-logo-text">
+      <div className="relative w-full max-w-[420px] bg-[var(--bg-card)] border border-[var(--border-primary)] rounded-xl p-12 shadow-lg animate-fade-in mx-auto mt-24">
+        <div className="text-center mb-8">
+          <BullLogo size={48} className="block mx-auto mb-2 text-[var(--accent)]" />
+          <h1 className="text-2xl font-extrabold text-[var(--text-primary)] tracking-[-0.02em]">
             Synthetic<span className="logo-accent">Bull</span>
           </h1>
-          <p className="auth-logo-sub">Trading Terminal</p>
+          <p className="text-xs text-[var(--text-muted)] uppercase tracking-[0.15em] mt-[2px]">Trading Terminal</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="auth-form">
-          <h2 className="auth-title">Welcome back</h2>
-          <p className="auth-subtitle">Sign in to your trading account</p>
+        <form onSubmit={handleSubmit} className="relative">
+          <h2 className="text-xl font-bold text-[var(--text-primary)] mb-1">Welcome back</h2>
+          <p className="text-sm text-[var(--text-secondary)] mb-6">Sign in to your trading account</p>
 
-          {error && <div className="auth-error">{error}</div>}
+          {error && <div className="px-[14px] py-[10px] bg-[var(--color-sell-bg)] border border-red-500/20 rounded-sm text-[var(--color-sell)] text-sm mb-4 animate-fade-in">{error}</div>}
 
           <div className="form-group">
             <label htmlFor="login-username">Username</label>
@@ -74,15 +74,15 @@ export default function LoginPage() {
 
           <button
             type="submit"
-            className="btn btn-primary btn-lg auth-submit"
+            className="btn btn-primary btn-lg w-full mt-4"
             disabled={loading}
             id="btn-login"
           >
             {loading ? 'Signing in...' : 'Sign In'}
           </button>
 
-          <p className="auth-footer">
-            Don&apos;t have an account? <Link href="/register">Create account</Link>
+          <p className="text-center text-sm text-[var(--text-secondary)] mt-6">
+            Don&apos;t have an account? <Link href="/register" className="text-[var(--accent)] font-semibold hover:text-[var(--accent-hover)] transition-colors">Create account</Link>
           </p>
         </form>
       </div>
