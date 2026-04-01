@@ -5,18 +5,27 @@ import './OrderPanel.css';
 
 export default function OrderPanel({ symbol, currentPrice, onSubmitOrder, cashBalance }) {
   const [side, setSide] = useState('buy');
-  const [orderType, setOrderType] = useState('limit');
+  const [orderType, setOrderType] = useState('market');
   const [price, setPrice] = useState(currentPrice?.toFixed(2) || '');
   const [quantity, setQuantity] = useState('');
   const [stopPrice, setStopPrice] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [feedback, setFeedback] = useState(null);
 
+  // Sync price when symbol/currentPrice changes from external navbar
+  React.useEffect(() => {
+    setPrice(currentPrice?.toFixed(2) || '');
+    setQuantity('');
+    setStopPrice('');
+  }, [symbol, currentPrice]);
+
   const total = price && quantity ? (parseFloat(price) * parseFloat(quantity)).toFixed(2) : '0.00';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!quantity || (orderType !== 'market' && !price)) return;
+    if (!quantity) return;
+    if (orderType === 'stop' && (!price || !stopPrice)) return;
+    if (orderType === 'limit' && !price) return; // For future-proofing although limit is hidden now
 
     setSubmitting(true);
     setFeedback(null);
@@ -40,7 +49,7 @@ export default function OrderPanel({ symbol, currentPrice, onSubmitOrder, cashBa
     setTimeout(() => setFeedback(null), 3000);
   };
 
-  const quickAmounts = [25, 50, 75, 100];
+
 
   return (
     <div className="order-panel card" id="order-panel">
@@ -69,55 +78,56 @@ export default function OrderPanel({ symbol, currentPrice, onSubmitOrder, cashBa
 
       {/* Order Type */}
       <div className="order-type-tabs">
-        {['limit', 'market', 'stop'].map(t => (
+        {['market', 'stop'].map(t => (
           <button
             key={t}
             className={`order-type-tab ${orderType === t ? 'active' : ''}`}
             onClick={() => setOrderType(t)}
             id={`order-type-${t}`}
           >
-            {t.charAt(0).toUpperCase() + t.slice(1)}
+            {t === 'stop' ? 'Limit' : t.charAt(0).toUpperCase() + t.slice(1)}
           </button>
         ))}
       </div>
 
       <form onSubmit={handleSubmit} className="order-form">
         {/* Price (not for market orders) */}
-        {orderType !== 'market' && (
-          <div className="form-group">
-            <label>Price (USD)</label>
-            <div className="input-with-icon">
-              <span className="input-icon">$</span>
-              <input
-                type="number"
-                step="0.01"
-                value={price}
-                onChange={e => setPrice(e.target.value)}
-                placeholder="0.00"
-                className="mono"
-                id="input-price"
-              />
-            </div>
-          </div>
-        )}
+
 
         {/* Stop Price */}
         {orderType === 'stop' && (
-          <div className="form-group">
-            <label>Stop Price (USD)</label>
-            <div className="input-with-icon">
-              <span className="input-icon">$</span>
-              <input
-                type="number"
-                step="0.01"
-                value={stopPrice}
-                onChange={e => setStopPrice(e.target.value)}
-                placeholder="0.00"
-                className="mono"
-                id="input-stop-price"
-              />
+          <>
+            <div className="form-group">
+              <label>Limit Price (INR)</label>
+              <div className="input-with-icon">
+                <span className="input-icon">₹</span>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={price}
+                  onChange={e => setPrice(e.target.value)}
+                  placeholder="0.00"
+                  className="mono"
+                  id="input-price"
+                />
+              </div>
             </div>
-          </div>
+            <div className="form-group">
+              <label>Stop Loss (INR)</label>
+              <div className="input-with-icon">
+                <span className="input-icon">₹</span>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={stopPrice}
+                  onChange={e => setStopPrice(e.target.value)}
+                  placeholder="0.00"
+                  className="mono"
+                  id="input-stop-price"
+                />
+              </div>
+            </div>
+          </>
         )}
 
         {/* Quantity */}
@@ -135,30 +145,12 @@ export default function OrderPanel({ symbol, currentPrice, onSubmitOrder, cashBa
           />
         </div>
 
-        {/* Quick amount buttons */}
-        <div className="quick-amounts">
-          {quickAmounts.map(pct => (
-            <button
-              key={pct}
-              type="button"
-              className="quick-amount-btn"
-              onClick={() => {
-                const balance = cashBalance || 0;
-                const p = price ? parseFloat(price) : currentPrice;
-                if (p > 0 && balance > 0) {
-                  setQuantity(Math.floor((balance * pct / 100) / p).toString());
-                }
-              }}
-            >
-              {pct}%
-            </button>
-          ))}
-        </div>
+
 
         {/* Total */}
         <div className="order-total">
           <span className="total-label">Estimated Total</span>
-          <span className="total-value mono">${parseFloat(total).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+          <span className="total-value mono">₹{parseFloat(total).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
         </div>
 
         {/* Submit */}

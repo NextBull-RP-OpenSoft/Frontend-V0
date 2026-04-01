@@ -1,6 +1,47 @@
 // ===== Core API Client =====
 
-export const BASE_URL = 'http://34.93.4.23:4000';
+export const BASE_URL = 'http://localhost:4000';
+
+export const SYMBOL_MAP: Record<string, string> = {
+  'BTC': 'RELIANCE',
+  'ETH': 'TCS',
+  'SOL': 'HDFCBANK',
+  'ADA': 'INFY',
+  'DOT': 'ICICIBANK',
+  'USDT': 'INR'
+};
+
+/**
+ * Recursively traverses data and replaces symbols based on SYMBOL_MAP.
+ * Handles strings, arrays, and objects.
+ */
+export function mapSymbols(data: any): any {
+  if (!data) return data;
+  
+  if (typeof data === 'string') {
+    return SYMBOL_MAP[data] || data;
+  }
+  
+  if (Array.isArray(data)) {
+    return data.map(mapSymbols);
+  }
+  
+  if (typeof data === 'object') {
+    const mapped: any = {};
+    for (const key in data) {
+      let val = data[key];
+      // Map both keys (if they are symbols) and values
+      if (key === 'symbol' || key === 'asset_symbol' || key === 'base_asset') {
+        mapped[key] = SYMBOL_MAP[val] || val;
+      } else {
+        mapped[key] = mapSymbols(val);
+      }
+    }
+    return mapped;
+  }
+  
+  return data;
+}
 
 export function getToken() {
   if (typeof window === 'undefined') return null;
@@ -64,7 +105,8 @@ export async function apiFetch(path: string, options: RequestInit = {}, _isRetry
   // Some endpoints return empty body on success
   const contentType = res.headers.get('content-type') || '';
   if (contentType.includes('application/json')) {
-    return res.json();
+    const raw = await res.json();
+    return mapSymbols(raw);
   }
   return null;
 }

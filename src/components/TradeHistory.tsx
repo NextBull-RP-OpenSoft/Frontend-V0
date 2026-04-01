@@ -38,7 +38,7 @@ export default function TradeHistory({ trades, symbol }) {
             key={trade.id || i}
           >
             <span className={`trade-price mono ${trade.aggressor_side === 'buy' || trade.side === 'buy' ? 'text-buy' : 'text-sell'}`}>
-              {trade.price.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+              {trade.price.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
             </span>
             <span className="trade-size mono">
               {(trade.quantity || trade.qty)?.toFixed(4)}

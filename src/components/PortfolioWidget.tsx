@@ -20,17 +20,17 @@ export default function PortfolioWidget({ portfolio, holdings, pnl, compact = fa
           </span>
         </div>
         <div className="compact-value mono">
-          ${totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          ₹{totalValue.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </div>
         <div className="compact-details">
           <div className="compact-detail">
             <span className="detail-label">Cash</span>
-            <span className="detail-value mono">${portfolio?.cash_balance?.toLocaleString(undefined, { minimumFractionDigits: 2 }) || '0.00'}</span>
+            <span className="detail-value mono">₹{portfolio?.cash_balance?.toLocaleString('en-IN', { minimumFractionDigits: 2 }) || '0.00'}</span>
           </div>
           <div className="compact-detail">
             <span className="detail-label">P&L</span>
             <span className={`detail-value mono ${isPositive ? 'text-buy' : 'text-sell'}`}>
-              {isPositive ? '+' : ''}${totalPnl.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+              {isPositive ? '+' : ''}₹{totalPnl.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
             </span>
           </div>
         </div>
@@ -45,7 +45,7 @@ export default function PortfolioWidget({ portfolio, holdings, pnl, compact = fa
           <div>
             <div className="hero-label">Total Portfolio Value</div>
             <div className="hero-value mono">
-              ${totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              ₹{totalValue.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
           </div>
           <div className={`hero-badge ${isPositive ? 'positive' : 'negative'}`}>
@@ -57,24 +57,24 @@ export default function PortfolioWidget({ portfolio, holdings, pnl, compact = fa
         <div className="hero-stats">
           <div className="hero-stat">
             <span className="hero-stat-label">Cash Balance</span>
-            <span className="hero-stat-value mono">${portfolio?.cash_balance?.toLocaleString(undefined, { minimumFractionDigits: 2 }) || '0.00'}</span>
+            <span className="hero-stat-value mono">₹{portfolio?.cash_balance?.toLocaleString('en-IN', { minimumFractionDigits: 2 }) || '0.00'}</span>
           </div>
           <div className="hero-stat">
             <span className="hero-stat-label">Realized P&L</span>
             <span className={`hero-stat-value mono ${(pnl?.realized_pnl || 0) >= 0 ? 'text-buy' : 'text-sell'}`}>
-              {(pnl?.realized_pnl || 0) >= 0 ? '+' : ''}${(pnl?.realized_pnl || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+              {(pnl?.realized_pnl || 0) >= 0 ? '+' : ''}₹{(pnl?.realized_pnl || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
             </span>
           </div>
           <div className="hero-stat">
             <span className="hero-stat-label">Unrealized P&L</span>
             <span className={`hero-stat-value mono ${(pnl?.unrealized_pnl || 0) >= 0 ? 'text-buy' : 'text-sell'}`}>
-              {(pnl?.unrealized_pnl || 0) >= 0 ? '+' : ''}${(pnl?.unrealized_pnl || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+              {(pnl?.unrealized_pnl || 0) >= 0 ? '+' : ''}₹{(pnl?.unrealized_pnl || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
             </span>
           </div>
           <div className="hero-stat">
             <span className="hero-stat-label">Total P&L</span>
             <span className={`hero-stat-value mono ${isPositive ? 'text-buy' : 'text-sell'}`}>
-              {isPositive ? '+' : ''}${totalPnl.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+              {isPositive ? '+' : ''}₹{totalPnl.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
             </span>
           </div>
         </div>
@@ -84,12 +84,12 @@ export default function PortfolioWidget({ portfolio, holdings, pnl, compact = fa
         <div className="holdings-section card">
           <div className="card-header">
             <h3>Holdings</h3>
-            <span className="badge badge-accent">{holdings.length} assets</span>
+            <span className="badge badge-accent">{holdings.length} stocks</span>
           </div>
           <table className="data-table">
             <thead>
               <tr>
-                <th>Asset</th>
+                <th>Stock</th>
                 <th>Quantity</th>
                 <th>Avg Cost</th>
                 <th>Market Value</th>
@@ -105,11 +105,11 @@ export default function PortfolioWidget({ portfolio, holdings, pnl, compact = fa
                     <td>
                       <span className="holding-symbol">{h.asset_symbol}</span>
                     </td>
-                    <td className="mono">{h.quantity.toFixed(4)}</td>
-                    <td className="mono">${h.avg_cost_basis.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                    <td className="mono">${h.market_value.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                    <td className="mono">{h.quantity.toFixed(2)}</td>
+                    <td className="mono">₹{h.avg_cost_basis.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                    <td className="mono">₹{h.market_value.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                     <td className={`mono ${holdingPnl >= 0 ? 'text-buy' : 'text-sell'}`}>
-                      {holdingPnl >= 0 ? '+' : ''}${holdingPnl.toFixed(2)}
+                      {holdingPnl >= 0 ? '+' : ''}₹{holdingPnl.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                       <span className="holding-pnl-pct"> ({holdingPnlPct.toFixed(2)}%)</span>
                     </td>
                   </tr>
