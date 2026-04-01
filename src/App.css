@@ -3,7 +3,7 @@
 .app-layout {
   display: flex;
   min-height: 100vh;
-  background: var(--gradient-bg);
+  background: var(--bg-primary);
 }
 
 .app-main {
@@ -29,22 +29,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--gradient-bg);
-  position: relative;
-  overflow: hidden;
-}
-
-.auth-layout::before {
-  content: '';
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: radial-gradient(ellipse at 30% 40%, rgba(0, 212, 170, 0.06) 0%, transparent 40%),
-              radial-gradient(ellipse at 70% 60%, rgba(224, 64, 251, 0.06) 0%, transparent 40%);
-  animation: gradientShift 15s ease infinite;
-  background-size: 200% 200%;
+  background: var(--bg-secondary);
 }
 
 /* ===== PAGE HEADERS ===== */
@@ -90,11 +75,6 @@
   border: 1px solid var(--border-primary);
   border-radius: var(--radius-lg);
   padding: var(--space-lg);
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
-}
-
-.card:hover {
-  border-color: var(--border-hover);
 }
 
 .card-header {
@@ -128,28 +108,17 @@
   border-radius: var(--radius-sm);
   font-size: var(--text-sm);
   font-weight: 600;
-  transition: all var(--transition-fast);
+  transition: background-color var(--transition-fast), border-color var(--transition-fast);
   white-space: nowrap;
 }
 
 .btn-primary {
-  background: var(--gradient-teal);
-  color: var(--text-inverse);
+  background: var(--accent);
+  color: var(--accent-fg);
 }
 
 .btn-primary:hover {
-  box-shadow: var(--shadow-glow-teal);
-  transform: translateY(-1px);
-}
-
-.btn-magenta {
-  background: var(--gradient-magenta);
-  color: white;
-}
-
-.btn-magenta:hover {
-  box-shadow: var(--shadow-glow-magenta);
-  transform: translateY(-1px);
+  background: var(--accent-hover);
 }
 
 .btn-outline {
@@ -159,8 +128,8 @@
 }
 
 .btn-outline:hover {
-  border-color: var(--accent-teal);
-  background: var(--accent-teal-bg);
+  border-color: var(--accent);
+  background: var(--accent-muted);
 }
 
 .btn-ghost {
@@ -171,27 +140,25 @@
 
 .btn-ghost:hover {
   color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--accent-muted);
 }
 
 .btn-buy {
   background: var(--color-buy);
-  color: var(--text-inverse);
+  color: #fff;
 }
 
 .btn-buy:hover {
   background: var(--color-buy-dim);
-  box-shadow: 0 0 20px rgba(0, 230, 118, 0.2);
 }
 
 .btn-sell {
   background: var(--color-sell);
-  color: white;
+  color: #fff;
 }
 
 .btn-sell:hover {
   background: var(--color-sell-dim);
-  box-shadow: 0 0 20px rgba(255, 82, 82, 0.2);
 }
 
 .btn-sm {
@@ -207,8 +174,6 @@
 .btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-  transform: none !important;
-  box-shadow: none !important;
 }
 
 /* ===== BADGES ===== */
@@ -232,14 +197,9 @@
   color: var(--color-sell);
 }
 
-.badge-teal {
-  background: var(--accent-teal-bg);
-  color: var(--accent-teal);
-}
-
-.badge-magenta {
-  background: var(--accent-magenta-bg);
-  color: var(--accent-magenta);
+.badge-accent {
+  background: var(--accent-muted);
+  color: var(--accent);
 }
 
 .badge-warning {
@@ -277,7 +237,7 @@
 
 .tab.active {
   background: var(--bg-elevated);
-  color: var(--accent-teal);
+  color: var(--accent);
 }
 
 /* ===== TABLE STYLES ===== */
@@ -308,7 +268,7 @@
 }
 
 .data-table tr:hover td {
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--accent-muted);
 }
 
 /* ===== FORM GROUPS ===== */
@@ -337,7 +297,6 @@
 
 .status-dot.active {
   background: var(--color-buy);
-  box-shadow: 0 0 8px rgba(0, 230, 118, 0.4);
 }
 
 .status-dot.inactive {
@@ -346,7 +305,6 @@
 
 .status-dot.warning {
   background: var(--color-warning);
-  box-shadow: 0 0 8px rgba(255, 171, 64, 0.4);
 }
 
 /* ===== RESPONSIVE ===== */
@@ -384,7 +342,7 @@
   width: 40px;
   height: 40px;
   border: 3px solid var(--border-primary);
-  border-top: 3px solid var(--accent-teal);
+  border-top: 3px solid var(--accent);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }

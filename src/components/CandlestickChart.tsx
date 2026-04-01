@@ -1,0 +1,165 @@
+'use client';
+
+import React, { useEffect, useRef, useState, useCallback } from 'react';
+import ChartEngine from '../chart/ChartEngine';
+import { computeSMA, computeEMA } from '../chart/computeIndicators';
+import './CandlestickChart.css';
+
+const INTERVALS = ['1s', '5s', '1m', '5m'];
+
+export default function CandlestickChart({ candles, interval, onIntervalChange, symbol }) {
+  const containerRef = useRef(null);
+  const engineRef = useRef(null);
+  const [tooltipData, setTooltipData] = useState(null);
+  const [showSMA, setShowSMA] = useState(true);
+  const [showEMA, setShowEMA] = useState(true);
+
+  const handleTooltip = useCallback((data) => {
+    setTooltipData(data);
+  }, []);
+
+  // Create/destroy engine on mount/unmount
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    const engine = new ChartEngine(containerRef.current, {
+      onTooltip: handleTooltip,
+    });
+    engineRef.current = engine;
+
+    const ro = new ResizeObserver(() => {
+      engine.resize();
+    });
+    ro.observe(containerRef.current);
+
+    return () => {
+      ro.disconnect();
+      engine.destroy();
+      engineRef.current = null;
+    };
+  }, [handleTooltip]);
+
+  // Update data when candles change
+  useEffect(() => {
+    if (!engineRef.current || !candles?.length) return;
+    engineRef.current.setData(candles);
+
+    const sma = computeSMA(candles, 20);
+    const ema = computeEMA(candles, 50);
+    engineRef.current.setIndicators(sma, ema);
+  }, [candles]);
+
+  // Update MA visibility
+  useEffect(() => {
+    if (!engineRef.current) return;
+    engineRef.current.showSMA = showSMA;
+    engineRef.current.showEMA = showEMA;
+    engineRef.current.renderMain();
+  }, [showSMA, showEMA]);
+
+  // Refresh theme when it changes (listen for data-theme attribute)
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      if (engineRef.current) engineRef.current.refreshTheme();
+    });
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme'],
+    });
+    return () => observer.disconnect();
+  }, []);
+
+  const formatPrice = (p) => {
+    if (p >= 1000) return '$' + p.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    if (p >= 1) return '$' + p.toFixed(2);
+    return '$' + p.toFixed(4);
+  };
+
+  const formatTime = (nanos) => {
+    const d = new Date(Math.floor(nanos / 1_000_000));
+    return d.toLocaleString('en-US', {
+      month: 'short', day: 'numeric',
+      hour: '2-digit', minute: '2-digit', second: '2-digit',
+      hour12: false,
+    });
+  };
+
+  const tooltipCandle = tooltipData?.candle;
+  const isUp = tooltipCandle ? tooltipCandle.close >= tooltipCandle.open : true;
+
+  return (
+    <div className="chart-container card" id="candlestick-chart">
+      <div className="chart-header">
+        <div className="chart-title">
+          <h3>{symbol}</h3>
+          <span className="chart-subtitle">Candlestick Chart</span>
+        </div>
+        <div className="chart-controls">
+          <div className="ma-toggles">
+            <label className="ma-toggle">
+              <input type="checkbox" checked={showSMA} onChange={(e) => setShowSMA(e.target.checked)} />
+              <span className="ma-label ma-sma">SMA 20</span>
+            </label>
+            <label className="ma-toggle">
+              <input type="checkbox" checked={showEMA} onChange={(e) => setShowEMA(e.target.checked)} />
+              <span className="ma-label ma-ema">EMA 50</span>
+            </label>
+          </div>
+          <div className="interval-tabs">
+            {INTERVALS.map(iv => (
+              <button
+                key={iv}
+                className={`interval-tab ${interval === iv ? 'active' : ''}`}
+                onClick={() => onIntervalChange(iv)}
+                id={`interval-${iv}`}
+              >
+                {iv}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div className="chart-body" ref={containerRef}>
+        {/* Tooltip overlay */}
+        {tooltipCandle && tooltipData && (
+          <div
+            className="chart-tooltip"
+            style={{
+              left: Math.min(tooltipData.x, (containerRef.current?.clientWidth || 400) - 220),
+              top: Math.max(8, tooltipData.y - 120),
+            }}
+          >
+            <div className="tooltip-time">{formatTime(tooltipCandle.open_time)}</div>
+            <div className="tooltip-grid">
+              <div className="tooltip-row">
+                <span className="tooltip-dot" style={{ background: isUp ? 'var(--color-buy)' : 'var(--color-sell)' }} />
+                <span className="tooltip-label">Open</span>
+                <span className="tooltip-value mono">{formatPrice(tooltipCandle.open)}</span>
+              </div>
+              <div className="tooltip-row">
+                <span className="tooltip-dot" style={{ background: 'var(--color-buy)' }} />
+                <span className="tooltip-label">High</span>
+                <span className="tooltip-value mono">{formatPrice(tooltipCandle.high)}</span>
+              </div>
+              <div className="tooltip-row">
+                <span className="tooltip-dot" style={{ background: 'var(--color-sell)' }} />
+                <span className="tooltip-label">Low</span>
+                <span className="tooltip-value mono">{formatPrice(tooltipCandle.low)}</span>
+              </div>
+              <div className="tooltip-row">
+                <span className="tooltip-dot" style={{ background: isUp ? 'var(--color-buy)' : 'var(--color-sell)' }} />
+                <span className="tooltip-label">Close</span>
+                <span className="tooltip-value mono">{formatPrice(tooltipCandle.close)}</span>
+              </div>
+              <div className="tooltip-row">
+                <span className="tooltip-dot" style={{ background: 'var(--accent)' }} />
+                <span className="tooltip-label">Volume</span>
+                <span className="tooltip-value mono">{tooltipCandle.volume?.toFixed(2)}</span>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

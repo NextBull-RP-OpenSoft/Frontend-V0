@@ -24,7 +24,7 @@
 }
 
 .logo-icon {
-  font-size: 1.5rem;
+  color: var(--accent);
 }
 
 .logo-text {
@@ -35,10 +35,7 @@
 }
 
 .logo-accent {
-  background: var(--gradient-mixed);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--accent);
 }
 
 .sidebar-tagline {
@@ -81,20 +78,20 @@
 
 .sidebar-link:hover {
   color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--accent-muted);
 }
 
 .sidebar-link.active {
-  color: var(--accent-teal);
-  background: var(--accent-teal-bg);
-  border-left: 3px solid var(--accent-teal);
+  color: var(--accent);
+  background: var(--accent-muted);
+  border-left: 3px solid var(--accent);
   padding-left: 9px;
 }
 
 .sidebar-link-icon {
-  font-size: 1.1rem;
-  width: 24px;
-  text-align: center;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
 }
 
 .sidebar-footer {
@@ -113,7 +110,7 @@
   width: 36px;
   height: 36px;
   border-radius: var(--radius-full);
-  background: var(--gradient-mixed);
+  background: var(--accent);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -151,10 +148,13 @@
   font-size: var(--text-xs);
   font-weight: 600;
   color: var(--text-secondary);
-  background: rgba(255, 255, 255, 0.03);
+  background: transparent;
   border: 1px solid var(--border-primary);
   transition: all var(--transition-fast);
   text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .sidebar-logout:hover {

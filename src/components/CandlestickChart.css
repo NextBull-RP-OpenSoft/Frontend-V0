@@ -1,7 +1,8 @@
 .chart-container {
   display: flex;
   flex-direction: column;
-  min-height: 400px;
+  height: 100%;
+  min-height: 360px;
 }
 
 .chart-header {
@@ -9,6 +10,8 @@
   align-items: center;
   justify-content: space-between;
   margin-bottom: var(--space-md);
+  flex-wrap: wrap;
+  gap: var(--space-sm);
 }
 
 .chart-title h3 {
@@ -20,6 +23,47 @@
 .chart-subtitle {
   font-size: var(--text-xs);
   color: var(--text-muted);
+  margin-left: var(--space-sm);
+}
+
+.chart-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.ma-toggles {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.ma-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  font-size: var(--text-xs);
+}
+
+.ma-toggle input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.ma-label {
+  font-weight: 600;
+  font-family: var(--font-mono);
+}
+
+.ma-sma {
+  color: var(--chart-sma-short);
+}
+
+.ma-ema {
+  color: var(--chart-ema-long);
 }
 
 .interval-tabs {
@@ -31,11 +75,10 @@
 }
 
 .interval-tab {
-  padding: 5px 12px;
+  padding: 4px 12px;
   border-radius: var(--radius-sm);
   font-size: var(--text-xs);
   font-weight: 600;
-  font-family: var(--font-mono);
   color: var(--text-secondary);
   transition: all var(--transition-fast);
 }
@@ -46,12 +89,64 @@
 
 .interval-tab.active {
   background: var(--bg-elevated);
-  color: var(--accent-teal);
+  color: var(--accent);
 }
 
 .chart-body {
   flex: 1;
-  min-height: 350px;
-  border-radius: var(--radius-md);
+  position: relative;
+  min-height: 280px;
   overflow: hidden;
+}
+
+/* Tooltip */
+.chart-tooltip {
+  position: absolute;
+  z-index: var(--z-tooltip);
+  pointer-events: none;
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+  padding: 10px 14px;
+  min-width: 200px;
+  box-shadow: var(--shadow-lg);
+}
+
+.tooltip-time {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.tooltip-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tooltip-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tooltip-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.tooltip-label {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  flex: 1;
+}
+
+.tooltip-value {
+  font-size: var(--text-xs);
+  color: var(--text-primary);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }

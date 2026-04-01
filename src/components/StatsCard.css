@@ -1,39 +1,18 @@
 .stats-card {
   position: relative;
   overflow: hidden;
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
 }
 
-.stats-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
+.stats-card-accent {
+  border-left: 3px solid var(--accent);
 }
 
-.stats-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: var(--border-primary);
-  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+.stats-card-buy {
+  border-left: 3px solid var(--color-buy);
 }
 
-.stats-card-teal::before {
-  background: var(--gradient-teal);
-}
-
-.stats-card-magenta::before {
-  background: var(--gradient-magenta);
-}
-
-.stats-card-buy::before {
-  background: var(--color-buy);
-}
-
-.stats-card-sell::before {
-  background: var(--color-sell);
+.stats-card-sell {
+  border-left: 3px solid var(--color-sell);
 }
 
 .stats-card-top {
@@ -69,8 +48,9 @@
 }
 
 .stats-card-icon {
-  font-size: 1.5rem;
-  opacity: 0.6;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
 }
 
 .stats-card-trend {

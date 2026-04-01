@@ -4,9 +4,7 @@
   left: 240px;
   right: 0;
   height: 60px;
-  background: rgba(8, 13, 24, 0.85);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: var(--bg-sidebar);
   border-bottom: 1px solid var(--border-primary);
   display: flex;
   align-items: center;
@@ -46,7 +44,7 @@
 
 .symbol-tab.active {
   background: var(--bg-elevated);
-  color: var(--accent-teal);
+  color: var(--accent);
 }
 
 .symbol-name {
@@ -78,6 +76,9 @@
 .price-change {
   font-size: var(--text-sm);
   font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
 }
 
 .price-change.positive {
@@ -110,6 +111,22 @@
   font-size: var(--text-sm);
   font-weight: 600;
   color: var(--text-primary);
+}
+
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  transition: all var(--transition-fast);
+}
+
+.theme-toggle:hover {
+  color: var(--text-primary);
+  background: var(--accent-muted);
 }
 
 .ws-status {

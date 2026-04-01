@@ -29,8 +29,7 @@
 
 .buy-btn.active {
   background: var(--color-buy);
-  color: var(--text-inverse);
-  box-shadow: 0 0 16px rgba(0, 230, 118, 0.2);
+  color: #fff;
 }
 
 .sell-btn {
@@ -39,8 +38,7 @@
 
 .sell-btn.active {
   background: var(--color-sell);
-  color: white;
-  box-shadow: 0 0 16px rgba(255, 82, 82, 0.2);
+  color: #fff;
 }
 
 .order-type-tabs {
@@ -64,8 +62,8 @@
 }
 
 .order-type-tab.active {
-  color: var(--accent-magenta);
-  border-bottom-color: var(--accent-magenta);
+  color: var(--accent);
+  border-bottom-color: var(--accent);
 }
 
 .order-form {
@@ -110,9 +108,9 @@
 }
 
 .quick-amount-btn:hover {
-  border-color: var(--accent-teal);
-  color: var(--accent-teal);
-  background: var(--accent-teal-bg);
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-muted);
 }
 
 .order-total {
@@ -155,11 +153,11 @@
 .order-feedback.success {
   background: var(--color-buy-bg);
   color: var(--color-buy);
-  border: 1px solid rgba(0, 230, 118, 0.2);
+  border: 1px solid rgba(34, 197, 94, 0.2);
 }
 
 .order-feedback.error {
   background: var(--color-sell-bg);
   color: var(--color-sell);
-  border: 1px solid rgba(255, 82, 82, 0.2);
+  border: 1px solid rgba(239, 68, 68, 0.2);
 }
