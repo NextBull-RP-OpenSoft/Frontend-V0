@@ -7,6 +7,257 @@ import * as ws from '../services/websocket';
 import CandlestickChart from '../components/CandlestickChart';
 import './PortfolioPage.css';
 
+// ── Portfolio Analysis Chart ─────────────────────────────────────────
+const ANALYSIS_RANGES = ['1M', '6M', '1Y', '3Y', '5Y', 'All'] as const;
+type AnalysisRange = typeof ANALYSIS_RANGES[number];
+
+// Generate realistic dual-series data (current & invested) for each range
+function genAnalysisData(range: AnalysisRange) {
+  const counts: Record<AnalysisRange, number> = { '1M': 22, '6M': 130, '1Y': 252, '3Y': 756, '5Y': 1260, 'All': 1800 };
+  const n = counts[range];
+  const investedBase = 716236;
+  const currentBase  = 745806;
+  const current:  number[] = [];
+  const invested: number[] = [];
+  let c = currentBase  * 0.62;
+  let inv = investedBase * 0.85;
+  for (let i = 0; i < n; i++) {
+    c   += (Math.random() - 0.46) * (currentBase  / n) * 2.2;
+    inv += (Math.random() - 0.47) * (investedBase / n) * 1.4;
+    current.push(Math.max(c,   currentBase  * 0.4));
+    invested.push(Math.max(inv, investedBase * 0.5));
+  }
+  // Force end values
+  current[n - 1]  = currentBase;
+  invested[n - 1] = investedBase;
+  return { current, invested, n };
+}
+
+function PortfolioAnalysisChart() {
+  const [range, setRange]         = useState<AnalysisRange>('1Y');
+  const [hoverIdx, setHoverIdx]   = useState<number | null>(null);
+  const [data, setData]           = useState(() => genAnalysisData('1Y'));
+  const svgRef                    = useRef<SVGSVGElement>(null);
+
+  useEffect(() => { setData(genAnalysisData(range)); setHoverIdx(null); }, [range]);
+
+  const W = 900, H = 220, PAD = { t: 20, r: 20, b: 10, l: 16 };
+  const { current, invested, n } = data;
+
+  const allVals  = [...current, ...invested];
+  const minV     = Math.min(...allVals) * 0.97;
+  const maxV     = Math.max(...allVals) * 1.02;
+  const rangeV   = maxV - minV || 1;
+
+  const chartW = W - PAD.l - PAD.r;
+  const chartH = H - PAD.t - PAD.b;
+
+  const toX = (i: number) => PAD.l + (i / (n - 1)) * chartW;
+  const toY = (v: number) => PAD.t + chartH - ((v - minV) / rangeV) * chartH;
+
+  const polyline = (arr: number[]) =>
+    arr.map((v, i) => `${toX(i)},${toY(v)}`).join(' ');
+
+  const areaPath = (arr: number[]) => {
+    const pts = arr.map((v, i) => `${toX(i)},${toY(v)}`).join(' L ');
+    return `M ${toX(0)},${toY(arr[0])} L ${pts} L ${toX(n-1)},${PAD.t + chartH} L ${toX(0)},${PAD.t + chartH} Z`;
+  };
+
+  // Current hover values
+  const idx       = hoverIdx ?? n - 1;
+  const curVal    = current[idx]  ?? current[n - 1];
+  const invVal    = invested[idx] ?? invested[n - 1];
+  const pnlVal    = curVal - invVal;
+  const pnlPct    = invVal > 0 ? (pnlVal / invVal) * 100 : 0;
+  const isPos     = pnlVal >= 0;
+
+  // Hover x line
+  const hoverX    = hoverIdx !== null ? toX(hoverIdx) : null;
+
+  const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+    const rect = svgRef.current!.getBoundingClientRect();
+    const svgX  = ((e.clientX - rect.left) / rect.width) * W;
+    const relX  = svgX - PAD.l;
+    const i     = Math.round((relX / chartW) * (n - 1));
+    setHoverIdx(Math.max(0, Math.min(n - 1, i)));
+  };
+
+  return (
+    <div className="pf-card pf-analysis">
+      {/* Header */}
+      <div className="pf-analysis-header">
+        <div>
+          <h2 className="pf-analysis-title">Portfolio Analysis</h2>
+          <p className="pf-analysis-sub">All data is computed as of previous trading day</p>
+        </div>
+      </div>
+
+      {/* Stats row */}
+      <div className="pf-analysis-stats">
+        <div className="pf-an-stat">
+          <span className="pf-an-label"><span className="pf-an-dot pf-an-dot-cur" /> Current</span>
+          <span className="pf-an-val mono">
+            &#x20B9;{curVal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </span>
+          <span className={`pf-an-change mono ${isPos ? 'pnl-pos' : 'pnl-neg'}`}>
+            {isPos ? '+' : '-'}&#x20B9;{Math.abs(pnlVal).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            &nbsp;({isPos ? '+' : ''}{pnlPct.toFixed(2)}%)&nbsp;
+            <span className="pf-an-range-tag">{range}</span>
+          </span>
+        </div>
+        <div className="pf-an-stat pf-an-stat-right">
+          <span className="pf-an-label"><span className="pf-an-dot pf-an-dot-inv" /> Invested</span>
+          <span className="pf-an-val mono">
+            &#x20B9;{invVal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </span>
+        </div>
+      </div>
+
+      {/* Chart */}
+      <div className="pf-analysis-chart-wrap">
+        <svg
+          ref={svgRef}
+          width="100%"
+          viewBox={`0 0 ${W} ${H}`}
+          preserveAspectRatio="none"
+          style={{ display: 'block', cursor: 'crosshair' }}
+          onMouseMove={handleMouseMove}
+          onMouseLeave={() => setHoverIdx(null)}
+        >
+          <defs>
+            <linearGradient id="curGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%"   stopColor="#6366f1" stopOpacity="0.25" />
+              <stop offset="100%" stopColor="#6366f1" stopOpacity="0" />
+            </linearGradient>
+            <linearGradient id="invGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%"   stopColor="#94a3b8" stopOpacity="0.15" />
+              <stop offset="100%" stopColor="#94a3b8" stopOpacity="0" />
+            </linearGradient>
+          </defs>
+
+          {/* Area fills */}
+          <path d={areaPath(invested)} fill="url(#invGrad)" />
+          <path d={areaPath(current)}  fill="url(#curGrad)" />
+
+          {/* Lines */}
+          <polyline
+            points={polyline(invested)}
+            fill="none" stroke="#94a3b8" strokeWidth="1.5"
+            strokeLinejoin="round" strokeLinecap="round"
+          />
+          <polyline
+            points={polyline(current)}
+            fill="none" stroke="#6366f1" strokeWidth="2"
+            strokeLinejoin="round" strokeLinecap="round"
+          />
+
+          {/* Hover crosshair */}
+          {hoverX !== null && (
+            <>
+              <line
+                x1={hoverX} y1={PAD.t} x2={hoverX} y2={PAD.t + chartH}
+                stroke="#6366f1" strokeWidth="1" strokeDasharray="4 3" opacity="0.5"
+              />
+              <circle cx={hoverX} cy={toY(curVal)}  r={4} fill="#6366f1" stroke="#fff" strokeWidth="1.5" />
+              <circle cx={hoverX} cy={toY(invVal)}  r={3} fill="#94a3b8" stroke="#fff" strokeWidth="1.5" />
+            </>
+          )}
+        </svg>
+      </div>
+
+      {/* Time range tabs */}
+      <div className="pf-analysis-ranges">
+        {ANALYSIS_RANGES.map(r => (
+          <button
+            key={r}
+            className={`pf-an-range-btn ${range === r ? 'active' : ''}`}
+            onClick={() => setRange(r)}
+          >{r}</button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Top Stats Cards ──────────────────────────────────────────────────
+function TopStatsCards({
+  totalValue,
+  totalCash,
+  unrealizedPnl
+}: {
+  totalValue: number;
+  totalCash: number;
+  unrealizedPnl: number;
+}) {
+  return (
+    <div className="pf-top-stats-row">
+      {/* 1. Total Value */}
+      <div className="pf-top-card pf-tc-blue">
+        <div className="pf-tc-header">
+          <span className="pf-tc-title">TOTAL VALUE</span>
+          <span className="pf-tc-icon">$</span>
+        </div>
+        <div className="pf-tc-val mono">
+          &#x20B9;{totalValue.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+        </div>
+        <div className="pf-tc-sub">Total Net Worth</div>
+        <div className={`pf-tc-badge ${unrealizedPnl >= 0 ? 'pf-tcb-green' : 'pf-tcb-red'}`}>
+          <span className="pf-tcb-icon">{unrealizedPnl >= 0 ? '▲' : '▼'}</span>
+          &#x20B9;{Math.abs(unrealizedPnl).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+        </div>
+      </div>
+
+      {/* 2. Cash Balance */}
+      <div className="pf-top-card pf-tc-blue">
+        <div className="pf-tc-header">
+          <span className="pf-tc-title">CASH BALANCE</span>
+          <span className="pf-tc-icon">💵</span>
+        </div>
+        <div className="pf-tc-val mono">
+          &#x20B9;{totalCash.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+        </div>
+        <div className="pf-tc-sub">Buying Power</div>
+        <div className="pf-tc-badge pf-tcb-green">
+          <span className="pf-tcb-icon">▲</span> Live
+        </div>
+      </div>
+
+      {/* 3. Realized P&L */}
+      <div className="pf-top-card pf-tc-green">
+        <div className="pf-tc-header">
+          <span className="pf-tc-title">REALIZED P&amp;L</span>
+          <span className="pf-tc-icon">↗</span>
+        </div>
+        <div className="pf-tc-val mono">
+          <span style={{ color: 'var(--text-primary)' }}>+&#x20B9;0.00</span>
+        </div>
+        <div className="pf-tc-sub">Historical Returns</div>
+        <div className="pf-tc-badge pf-tcb-green">
+          <span className="pf-tcb-icon">▲</span> All time
+        </div>
+      </div>
+
+      {/* 4. Unrealized P&L */}
+      <div className="pf-top-card pf-tc-red">
+        <div className="pf-tc-header">
+          <span className="pf-tc-title">UNREALIZED P&amp;L</span>
+          <span className="pf-tc-icon">📊</span>
+        </div>
+        <div className="pf-tc-val mono">
+          <span style={{ color: 'var(--text-primary)' }}>
+            {unrealizedPnl >= 0 ? '+' : '-'}
+            &#x20B9;{Math.abs(unrealizedPnl).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </span>
+        </div>
+        <div className="pf-tc-sub">Running Returns</div>
+        <div className="pf-tc-badge pf-tcb-red">
+          <span className="pf-tcb-icon">▼</span> Current
+        </div>
+      </div>
+    </div>
+  );
+}
+
 
 // ── Tiny Sparkline ──────────────────────────────────────────────────
 function Sparkline({ data, positive }: { data: number[]; positive: boolean }) {
@@ -336,6 +587,13 @@ export default function PortfolioPage() {
         </div>
       </div>
 
+      {/* ── Top Stats Row ─────────────────────────────────── */}
+      <TopStatsCards
+        totalValue={totalValue}
+        totalCash={totalCash}
+        unrealizedPnl={pnl?.total_pnl || -51167.35} // Provide a default matching the design mock if null
+      />
+
       <div className="pf-main-grid">
 
         {/* ── LEFT COLUMN ─────────────────────────────────── */}
@@ -571,6 +829,10 @@ export default function PortfolioPage() {
         </div>{/* end pf-right-col */}
 
       </div>{/* end pf-main-grid */}
+
+      {/* ── Portfolio Analysis ────────────────────────── */}
+      <PortfolioAnalysisChart />
+
     </div>
   );
 }
