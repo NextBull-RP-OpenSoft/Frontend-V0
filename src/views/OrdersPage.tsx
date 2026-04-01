@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { BarChart3, TrendingUp } from 'lucide-react';
+import StatsCard from '../components/StatsCard';
 import * as api from '../services/api';
 import './OrdersPage.css';
 
@@ -20,12 +22,24 @@ const statusBadgeClass = (status) => {
 export default function OrdersPage() {
   const [orders, setOrders] = useState([]);
   const [activeTab, setActiveTab] = useState('all');
+  const [pnl, setPnl] = useState(null);
 
-  const loadOrders = () => api.getOrders().then(setOrders).catch(() => { });
+  const loadData = async () => {
+    try {
+      const [o, p] = await Promise.all([
+        api.getOrders(),
+        api.getPnL()
+      ]);
+      setOrders(o || []);
+      setPnl(p);
+    } catch (err) {
+      console.error('Failed to load orders data', err);
+    }
+  };
 
   useEffect(() => {
-    loadOrders();
-    const interval = setInterval(loadOrders, 5000);
+    loadData();
+    const interval = setInterval(loadData, 5000);
     return () => clearInterval(interval);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -35,7 +49,7 @@ export default function OrdersPage() {
 
   const formatDate = (nanos) => {
     const date = new Date(Math.floor(nanos / 1_000_000));
-    return date.toLocaleString('en-US', {
+    return date.toLocaleString('en-IN', {
       month: 'short', day: 'numeric',
       hour: '2-digit', minute: '2-digit', second: '2-digit',
       hour12: false,
@@ -52,6 +66,27 @@ export default function OrdersPage() {
       <div className="page-header">
         <h1>Orders</h1>
         <p>View and manage your trading orders</p>
+      </div>
+
+      <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+        <StatsCard
+          title="Unrealized P&L"
+          value={`${(pnl?.unrealized_pnl || 0) >= 0 ? '+' : ''}₹${(pnl?.unrealized_pnl || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
+          subtitle="Open Positions"
+          icon={<BarChart3 size={20} />}
+          variant={(pnl?.unrealized_pnl || 0) >= 0 ? 'buy' : 'sell'}
+          trend={(pnl?.unrealized_pnl || 0) >= 0 ? 'up' : 'down'}
+          trendValue="Current"
+        />
+        <StatsCard
+          title="Realized P&L"
+          value={`${(pnl?.realized_pnl || 0) >= 0 ? '+' : ''}₹${(pnl?.realized_pnl || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
+          subtitle="Closed Positions"
+          icon={<TrendingUp size={20} />}
+          variant={(pnl?.realized_pnl || 0) >= 0 ? 'buy' : 'sell'}
+          trend={(pnl?.realized_pnl || 0) >= 0 ? 'up' : 'down'}
+          trendValue="All time"
+        />
       </div>
 
       {/* Filter Tabs */}
@@ -104,9 +139,9 @@ export default function OrdersPage() {
                     {order.side.toUpperCase()}
                   </span>
                 </td>
-                <td className="mono">${order.price.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                <td className="mono">{order.quantity.toFixed(4)}</td>
-                <td className="mono">{order.filled_quantity.toFixed(4)}</td>
+                <td className="mono">₹{order.price?.toLocaleString('en-IN', { minimumFractionDigits: 2 }) ?? '0.00'}</td>
+                <td className="mono">{order.quantity?.toLocaleString('en-IN') ?? '0'}</td>
+                <td className="mono">{order.filled_quantity?.toLocaleString('en-IN') ?? '0'}</td>
                 <td>
                   <span className={`badge ${statusBadgeClass(order.status)}`}>
                     {order.status}
@@ -127,7 +162,7 @@ export default function OrdersPage() {
             ))}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan="9" className="empty-state">
+                <td colSpan={9} className="empty-state">
                   No orders found
                 </td>
               </tr>

@@ -18,6 +18,12 @@ export default function TradeHistory({ trades, symbol }) {
     });
   };
 
+  // Format share quantity as whole number
+  const formatQty = (qty) => {
+    const n = qty ?? 0;
+    return Number.isInteger(n) ? n.toString() : Math.round(n).toString();
+  };
+
   return (
     <div className="trade-history card" id="trade-history">
       <div className="card-header">
@@ -27,7 +33,7 @@ export default function TradeHistory({ trades, symbol }) {
 
       <div className="trade-labels">
         <span>Price</span>
-        <span>Size</span>
+        <span>Shares</span>
         <span>Time</span>
       </div>
 
@@ -38,10 +44,10 @@ export default function TradeHistory({ trades, symbol }) {
             key={trade.id || i}
           >
             <span className={`trade-price mono ${trade.aggressor_side === 'buy' || trade.side === 'buy' ? 'text-buy' : 'text-sell'}`}>
-              {trade.price.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+              {trade.price.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
             <span className="trade-size mono">
-              {(trade.quantity || trade.qty)?.toFixed(4)}
+              {formatQty(trade.quantity ?? trade.qty)}
             </span>
             <span className="trade-time mono">
               {formatTime(trade.executed_at || Date.now() * 1_000_000)}

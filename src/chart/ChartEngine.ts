@@ -429,8 +429,7 @@ export default class ChartEngine {
 
     for (let p = start; p <= priceRange.max; p += step) {
       const y = area.y + (1 - (p - priceRange.min) / (priceRange.max - priceRange.min)) * area.priceHeight;
-      const label = p >= 1000 ? p.toLocaleString(undefined, { maximumFractionDigits: 0 }) :
-                    p >= 1 ? p.toFixed(2) : p.toFixed(4);
+      const label = p >= 1 ? p.toLocaleString('en-IN', { maximumFractionDigits: 2, minimumFractionDigits: 2 }) : p.toFixed(4);
       ctx.fillText(label, area.x + area.width + 8 * this.dpr, y);
     }
   }
@@ -487,8 +486,7 @@ export default class ChartEngine {
       ctx.globalAlpha = 1;
       ctx.setLineDash([]);
       const price = priceRange.min + (1 - (this.mouseY - area.y) / area.priceHeight) * (priceRange.max - priceRange.min);
-      const label = price >= 1000 ? price.toLocaleString(undefined, { maximumFractionDigits: 0 }) :
-                    price >= 1 ? price.toFixed(2) : price.toFixed(4);
+      const label = price >= 1 ? price.toLocaleString('en-IN', { maximumFractionDigits: 2, minimumFractionDigits: 2 }) : price.toFixed(4);
       const labelW = ctx.measureText(label).width + 12 * this.dpr;
       ctx.fillStyle = this.colors.crosshair;
       ctx.fillRect(area.x + area.width + 2 * this.dpr, this.mouseY - 10 * this.dpr, labelW, 20 * this.dpr);

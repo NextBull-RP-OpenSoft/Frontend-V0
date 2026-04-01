@@ -1,14 +1,15 @@
 'use client';
 
 import React from 'react';
-import { ChevronUp, ChevronDown, Sun, Moon } from 'lucide-react';
+import { Sun, Moon, Wifi, Zap } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useMarket } from '../context/MarketContext';
+import StockSelector from './StockSelector';
 import './Navbar.css';
 
 export default function Navbar() {
   const { theme, toggleTheme } = useTheme();
-  const { selectedSymbol, setSelectedSymbol, assets, marketStats } = useMarket();
+  const { selectedSymbol, assets, marketStats, setIsOrderActive } = useMarket();
 
   const currentAsset = assets?.find(a => a.symbol === selectedSymbol);
   const priceChange = currentAsset
@@ -20,56 +21,60 @@ export default function Navbar() {
 
   return (
     <header className="navbar" id="main-navbar">
-      <div className="navbar-left">
-        <div className="symbol-tabs">
-          {assets.map(asset => (
-            <button
-              key={asset.symbol}
-              className={`symbol-tab ${selectedSymbol === asset.symbol ? 'active' : ''}`}
-              onClick={() => setSelectedSymbol(asset.symbol)}
-              id={`symbol-tab-${asset.symbol.toLowerCase()}`}
-            >
-              <span className="symbol-name">{asset.symbol}</span>
-            </button>
-          ))}
-        </div>
+
+
+      {/* Stock selector takes up the bulk of the bar */}
+      <div className="navbar-selector">
+        <StockSelector />
       </div>
 
-      <div className="navbar-center">
+      <button 
+        className="navbar-place-order-btn"
+        onClick={() => setIsOrderActive(true)}
+      >
+        <Zap size={14} /> Place Order
+      </button>
+
+      {/* Right-side stats */}
+      <div className="navbar-right">
         {currentAsset && (
           <div className="price-display">
             <span className="current-price mono">
-              ${currentAsset.current_price?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              ₹{currentAsset.current_price?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
             <span className={`price-change ${isPositive ? 'positive' : 'negative'}`}>
-              {isPositive ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-              {Math.abs(priceChange).toFixed(2)}%
+              {isPositive ? '▲' : '▼'} {Math.abs(priceChange).toFixed(2)}%
             </span>
           </div>
         )}
-      </div>
 
-      <div className="navbar-right">
         <div className="navbar-stat">
-          <span className="stat-label">Volume</span>
+          <span className="stat-label">Vol</span>
           <span className="stat-value mono">
-            {stats.volume != null ? `$${(stats.volume).toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '--'}
+            {stats.volume != null
+              ? (stats.volume >= 1_000_000
+                  ? `${(stats.volume / 1_000_000).toFixed(1)}M`
+                  : stats.volume >= 1_000
+                    ? `${(stats.volume / 1_000).toFixed(0)}K`
+                    : stats.volume.toFixed(0))
+              : '--'}
           </span>
         </div>
         <div className="navbar-stat">
-          <span className="stat-label">24h High</span>
+          <span className="stat-label">Hi</span>
           <span className="stat-value mono text-buy">
-            {stats.high24h != null ? `$${stats.high24h.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '--'}
+            {stats.high24h != null ? `₹${stats.high24h.toLocaleString('en-IN', { maximumFractionDigits: 2 })}` : '--'}
           </span>
         </div>
         <div className="navbar-stat">
-          <span className="stat-label">24h Low</span>
+          <span className="stat-label">Lo</span>
           <span className="stat-value mono text-sell">
-            {stats.low24h != null ? `$${stats.low24h.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '--'}
+            {stats.low24h != null ? `₹${stats.low24h.toLocaleString('en-IN', { maximumFractionDigits: 2 })}` : '--'}
           </span>
         </div>
-        <button className="theme-toggle" onClick={toggleTheme} title="Toggle theme">
-          {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+
+        <button className="theme-toggle" onClick={toggleTheme} title="Toggle theme" id="btn-theme-toggle">
+          {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
         </button>
         <div className="ws-status" id="ws-status">
           <span className="status-dot active"></span>

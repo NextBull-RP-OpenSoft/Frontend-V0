@@ -56,7 +56,7 @@ export default function RegisterPage() {
 
         <form onSubmit={handleSubmit} className="auth-form">
           <h2 className="auth-title">Create Account</h2>
-          <p className="auth-subtitle">Start trading with $100,000 simulated capital</p>
+          <p className="auth-subtitle">Start trading with ₹10,00,000 simulated capital</p>
 
           {error && <div className="auth-error">{error}</div>}
 

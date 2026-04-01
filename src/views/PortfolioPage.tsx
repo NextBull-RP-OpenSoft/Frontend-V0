@@ -31,7 +31,7 @@ export default function PortfolioPage() {
   };
 
   const handleReset = async () => {
-    if (!window.confirm('Are you sure you want to reset your portfolio? All positions will be closed and balance reset to $100,000.')) return;
+    if (!window.confirm('Are you sure you want to reset your portfolio? All positions will be closed and balance reset to ₹10,00,000.')) return;
     setResetting(true);
     await api.resetPortfolio();
     await loadData();
@@ -63,21 +63,26 @@ export default function PortfolioPage() {
       <div className="grid-4 portfolio-stats">
         <StatsCard
           title="Total Value"
-          value={`$${((portfolio?.cash_balance || 0) + totalHoldingsValue).toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
+          value={`₹${((portfolio?.cash_balance || 0) + totalHoldingsValue).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
+          subtitle="Total Net Worth"
           icon={<DollarSign size={20} />}
           variant="accent"
           trend={pnl?.total_pnl >= 0 ? 'up' : 'down'}
-          trendValue={`${pnl?.total_pnl >= 0 ? '+' : ''}$${(pnl?.total_pnl || 0).toFixed(2)}`}
+          trendValue={`${pnl?.total_pnl >= 0 ? '+' : ''}₹${(pnl?.total_pnl || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
         />
         <StatsCard
           title="Cash Balance"
-          value={`$${(portfolio?.cash_balance || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
+          value={`₹${(portfolio?.cash_balance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
+          subtitle="Buying Power"
           icon={<Banknote size={20} />}
           variant="accent"
+          trend="up"
+          trendValue="Live"
         />
         <StatsCard
           title="Realized P&L"
-          value={`${(pnl?.realized_pnl || 0) >= 0 ? '+' : ''}$${(pnl?.realized_pnl || 0).toFixed(2)}`}
+          value={`${(pnl?.realized_pnl || 0) >= 0 ? '+' : ''}₹${(pnl?.realized_pnl || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
+          subtitle="Historical Returns"
           icon={<TrendingUp size={20} />}
           variant={pnl?.realized_pnl >= 0 ? 'buy' : 'sell'}
           trend={pnl?.realized_pnl >= 0 ? 'up' : 'down'}
@@ -85,7 +90,8 @@ export default function PortfolioPage() {
         />
         <StatsCard
           title="Unrealized P&L"
-          value={`${(pnl?.unrealized_pnl || 0) >= 0 ? '+' : ''}$${(pnl?.unrealized_pnl || 0).toFixed(2)}`}
+          value={`${(pnl?.unrealized_pnl || 0) >= 0 ? '+' : ''}₹${(pnl?.unrealized_pnl || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
+          subtitle="Running Returns"
           icon={<BarChart3 size={20} />}
           variant={pnl?.unrealized_pnl >= 0 ? 'buy' : 'sell'}
           trend={pnl?.unrealized_pnl >= 0 ? 'up' : 'down'}
