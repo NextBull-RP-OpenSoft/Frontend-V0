@@ -4,7 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
-import { LayoutDashboard, Wallet, ClipboardList, Bot, Settings, LogOut } from 'lucide-react';
+import { LayoutDashboard, Wallet, ClipboardList, Bot, Settings, LogOut, List } from 'lucide-react';
 import BullLogo from './BullLogo';
 import './Sidebar.css';
 
@@ -14,6 +14,7 @@ const NAV_ITEMS = [
   { path: '/orders', label: 'Orders', icon: ClipboardList },
   { path: '/bots', label: 'Bots', icon: Bot },
   { path: '/admin', label: 'Admin', icon: Settings },
+  { path: '/watchlist', label: 'Watchlist', icon: List },
 ];
 
 export default function Sidebar() {
