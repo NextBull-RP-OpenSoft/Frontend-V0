@@ -2,6 +2,11 @@
     padding: var(--space-xl) var(--space-2xl);
     max-width: 1400px;
     margin: 0 auto;
+    width: 100%;
+    box-sizing: border-box;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
     animation: fadeIn 0.4s ease;
 }
 
@@ -64,45 +69,87 @@
 }
 
 .watchlist-tabs-row {
-    display: flex;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
-    justify-content: space-between;
-    gap: var(--space-md);
+    gap: var(--space-lg);
     margin-bottom: var(--space-xl);
     width: 100%;
+    position: relative;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.tabs-nav-outer {
+    min-width: 0;
+    overflow: hidden;
+    position: relative;
 }
 
 .tabs-scroll-area {
     display: flex;
     align-items: center;
-    gap: var(--space-sm);
+    gap: var(--space-xs);
     overflow-x: auto;
-    padding-bottom: 4px;
-    flex: 1;
-    scrollbar-width: none; /* Firefox */
+    overflow-y: hidden;
+    padding-bottom: 2px;
+    width: 100%;
+    box-sizing: border-box;
+    scrollbar-width: none; 
+    -ms-overflow-style: none;
+    mask-image: linear-gradient(to right, black 85%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
 }
 
 .tabs-scroll-area::-webkit-scrollbar {
-    display: none; /* Chrome/Safari */
+    display: none;
 }
 
 .tab-item {
-    padding: 10px 24px;
-    border-radius: var(--radius-lg);
-    background: transparent;
-    color: var(--text-secondary);
+    padding: 8px 18px;
+    background: var(--bg-input);
+    color: var(--text-muted);
     font-weight: 600;
-    border: 1px solid var(--border-primary);
+    font-size: var(--text-sm);
+    border: 1px solid transparent;
+    border-radius: var(--radius-lg);
     transition: all var(--transition-fast);
     white-space: nowrap;
     flex-shrink: 0;
+    cursor: pointer;
+}
+
+.tab-item:hover {
+    color: var(--text-primary);
+    background: var(--bg-card-hover);
 }
 
 .tab-item.active {
     background: var(--accent);
     color: var(--accent-fg);
     border-color: var(--accent);
-    box-shadow: 0 4px 12px var(--accent-muted);
+    box-shadow: 0 2px 8px var(--accent-muted);
+}
+
+.tab-add {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--bg-input);
+    color: var(--text-muted);
+    border: none;
+    flex-shrink: 0;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    margin-left: 8px;
+}
+
+.tab-add:hover {
+    background: var(--border-primary);
+    color: var(--text-primary);
 }
 
 .tabs-actions {
@@ -110,6 +157,7 @@
     align-items: center;
     gap: var(--space-sm);
     flex-shrink: 0;
+    margin-left: auto;
 }
 
 .watchlist-search-container {
@@ -187,13 +235,15 @@
     display: flex;
     align-items: flex-start;
     width: 100%;
+    max-width: 100%;
     transition: gap 0.3s ease;
 }
 
 .table-wrapper {
     flex: 1;
-    transition: all 0.3s ease;
     min-width: 0;
+    width: 100%;
+    transition: all 0.3s ease;
 }
 
 .order-panel-wrapper {
@@ -222,6 +272,7 @@
     text-transform: uppercase;
     letter-spacing: 0.05em;
     border-bottom: 1px solid var(--border-primary);
+    user-select: none;
 }
 
 .watchlist-table th.sortable {
@@ -237,7 +288,26 @@
 .th-content {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 6px;
+}
+
+.sort-arrows {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    margin-top: 1px;
+}
+
+.sort-arrow {
+    color: var(--text-muted);
+    opacity: 0.35;
+    margin: -3px 0;
+    transition: all var(--transition-fast);
+}
+
+.sort-arrow.active {
+    color: var(--accent);
+    opacity: 1;
 }
 
 .th-content.flex-end {
@@ -246,7 +316,7 @@
 
 .watchlist-row {
     border-bottom: 1px solid var(--border-primary);
-    transition: background var(--transition-fast);
+    transition: background var(--transition-fast), transform var(--transition-base), box-shadow var(--transition-base);
 }
 
 .watchlist-row:last-child {
@@ -406,15 +476,75 @@
 
 .btn-row.terminal {
     color: var(--accent);
-    background: #ffffff;
+    background: #000000;
     border: 1px solid var(--accent);
     width: 32px;
-    transition: none;
 }
 
 .btn-row.terminal:hover {
+    background: #222222;
+}
+
+[data-theme="light"] .btn-row.terminal {
     background: #ffffff;
-    color: #3b82f6; /* A slightly brighter blue for hover feedback if needed, else same */
+    color: var(--accent);
+    border: 1px solid var(--accent);
+}
+
+[data-theme="light"] .btn-row.terminal:hover {
+    background: #f8fafc;
+}
+
+.edit-active {
+    background: var(--accent) !important;
+    color: #fff !important;
+    border-color: var(--accent) !important;
+}
+
+.drag-handle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    cursor: grab;
+    margin-right: -8px;
+    padding: 4px;
+    opacity: 0.7;
+    transition: all var(--transition-fast);
+}
+
+.watchlist-row.editable {
+    cursor: grab;
+}
+
+.watchlist-row.editable:active {
+    cursor: grabbing;
+}
+
+.watchlist-row.editable .row-actions {
+    display: none !important;
+}
+
+.watchlist-row.dragging {
+    opacity: 1 !important;
+    background: var(--bg-card-hover) !important;
+    box-shadow: var(--shadow-md) !important;
+    transform: scale(1.01) !important;
+    z-index: 10;
+    position: relative;
+}
+
+.watchlist-row.drag-over {
+    background: var(--bg-elevated) !important;
+}
+
+.drag-handle:hover {
+    color: var(--accent);
+    opacity: 1;
+}
+
+.watchlist-row.editable:active {
+    cursor: grabbing;
 }
 
 .btn-row.buy-sell {

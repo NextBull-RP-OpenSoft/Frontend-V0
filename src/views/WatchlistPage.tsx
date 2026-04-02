@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Plus, Edit2, X, Search, Check, BarChart2, Trash2, ArrowUpRight, ChevronUp, ChevronDown } from 'lucide-react';
+import { Plus, Edit2, X, Search, Check, BarChart2, Trash2, ArrowUpRight, ChevronUp, ChevronDown, GripVertical } from 'lucide-react';
 import './WatchlistPage.css';
 
 // Dummy data for initial implementation
@@ -213,6 +213,10 @@ export default function WatchlistPage() {
   const [selectedTradeStock, setSelectedTradeStock] = useState<any | null>(null);
   const [tableSearchTerm, setTableSearchTerm] = useState('');
   
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [draggedRowIndex, setDraggedRowIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  
   const modalRef = useRef<HTMLDivElement>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
   const stockSearchRef = useRef<HTMLInputElement>(null);
@@ -349,9 +353,23 @@ export default function WatchlistPage() {
   const handleDeleteStock = (symbol: string) => {
     setWatchlists(prev => {
       const newWatchlists = [...prev];
+      const updatedStocks = newWatchlists[activeTab].stocks.filter(s => s.symbol !== symbol);
+      
+      if (updatedStocks.length === 0 && activeTab !== 0) {
+        newWatchlists.splice(activeTab, 1);
+        // We must schedule the active tab update to run outside this state setter,
+        // but since we are returning the new array, React will re-render.
+        // Doing state updates during render or inside set state callback is tricky.
+        // It's safer to just handle it here in a setTimeout to avoid warnings, or better, 
+        // using useEffect checking the watchlists array and activeTab. 
+        // For simplicity, we just safely adjust the tab later.
+        setTimeout(() => setActiveTab(0), 0);
+        return newWatchlists;
+      }
+
       newWatchlists[activeTab] = {
         ...newWatchlists[activeTab],
-        stocks: newWatchlists[activeTab].stocks.filter(s => s.symbol !== symbol)
+        stocks: updatedStocks
       };
       return newWatchlists;
     });
@@ -365,6 +383,62 @@ export default function WatchlistPage() {
 
   const removeStock = (symbol: string) => {
     setSelectedStocks(prev => prev.filter(s => s.symbol !== symbol));
+  };
+
+  /* ── Drag and Drop Handlers ── */
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    setDraggedRowIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+    setTimeout(() => {
+        if (e.target instanceof HTMLElement) {
+            e.target.classList.add('dragging');
+        }
+    }, 0);
+  };
+
+  const handleDragEnter = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    if (draggedRowIndex !== index) {
+        setDragOverIndex(index);
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent, index: number) => {
+    if (dragOverIndex === index) {
+        setDragOverIndex(null);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = (e: React.DragEvent, targetIndex: number) => {
+    e.preventDefault();
+    setDragOverIndex(null);
+    if (draggedRowIndex === null || draggedRowIndex === targetIndex) return;
+
+    setWatchlists(prev => {
+      const newWls = [...prev];
+      const activeSTs = [...newWls[activeTab].stocks];
+      
+      // Reorder items
+      const [movedItem] = activeSTs.splice(draggedRowIndex, 1);
+      activeSTs.splice(targetIndex, 0, movedItem);
+      
+      newWls[activeTab] = { ...newWls[activeTab], stocks: activeSTs };
+      return newWls;
+    });
+    setDraggedRowIndex(null);
+  };
+
+  const handleDragEnd = (e: React.DragEvent) => {
+    setDraggedRowIndex(null);
+    setDragOverIndex(null);
+    if (e.target instanceof HTMLElement) {
+        e.target.classList.remove('dragging');
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -389,8 +463,16 @@ export default function WatchlistPage() {
   };
 
   const SortIndicator = ({ sortKey }: { sortKey: string }) => {
-    if (sortConfig.key !== sortKey) return null;
-    return sortConfig.direction === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />;
+    const isActive = sortConfig.key === sortKey;
+    const isAsc = isActive && sortConfig.direction === 'asc';
+    const isDesc = isActive && sortConfig.direction === 'desc';
+    
+    return (
+      <div className="sort-arrows">
+        <ChevronUp size={16} className={`sort-arrow ${isAsc ? 'active' : ''}`} />
+        <ChevronDown size={16} className={`sort-arrow ${isDesc ? 'active' : ''}`} />
+      </div>
+    );
   };
 
   return (
@@ -403,19 +485,21 @@ export default function WatchlistPage() {
       </header>
 
       <div className="watchlist-tabs-row">
-        <div className="tabs-scroll-area">
-          {watchlists.map((wl, idx) => (
-            <button 
-              key={idx}
-              className={`tab-item ${activeTab === idx ? 'active' : ''}`}
-              onClick={() => setActiveTab(idx)}
-            >
-              {wl.name}
+        <div className="tabs-nav-outer">
+          <div className="tabs-scroll-area">
+            {watchlists.map((wl, idx) => (
+              <button 
+                key={idx}
+                className={`tab-item ${activeTab === idx ? 'active' : ''}`}
+                onClick={() => setActiveTab(idx)}
+              >
+                {wl.name}
+              </button>
+            ))}
+            <button className="tab-add" onClick={() => setIsModalOpen(true)}>
+              <Plus size={18} />
             </button>
-          ))}
-          <button className="tab-add" onClick={() => setIsModalOpen(true)}>
-            <Plus size={18} />
-          </button>
+          </div>
         </div>
         <div className="tabs-actions">
           <div className="watchlist-search-container">
@@ -431,6 +515,17 @@ export default function WatchlistPage() {
           <button className="btn-tab-action" onClick={() => setIsAddStocksModalOpen(true)}>
             <Plus size={16} />
             <span>Add stocks</span>
+          </button>
+          <button 
+            className={`btn-tab-action ${isEditMode ? 'edit-active' : ''}`} 
+            onClick={() => {
+              const next = !isEditMode;
+              setIsEditMode(next);
+              if (next) setSortConfig({ key: null, direction: 'asc' });
+            }}
+          >
+            {isEditMode ? <Check size={16} /> : <Edit2 size={16} />}
+            <span>{isEditMode ? 'Done' : 'Edit'}</span>
           </button>
         </div>
       </div>
@@ -458,13 +553,28 @@ export default function WatchlistPage() {
             </tr>
           </thead>
           <tbody>
-            {sortedStocks.map((item) => {
+            {sortedStocks.map((item, index) => {
               const isPositive = item.change >= 0;
               const color = isPositive ? 'var(--color-buy)' : 'var(--color-sell)';
               return (
-                <tr key={item.symbol} className="watchlist-row">
+                <tr 
+                  key={item.symbol} 
+                  className={`watchlist-row ${isEditMode ? 'editable' : ''} ${dragOverIndex === index ? 'drag-over' : ''}`}
+                  draggable={isEditMode}
+                  onDragStart={(e) => handleDragStart(e, index)}
+                  onDragEnter={(e) => handleDragEnter(e, index)}
+                  onDragLeave={(e) => handleDragLeave(e, index)}
+                  onDragOver={handleDragOver}
+                  onDrop={(e) => handleDrop(e, index)}
+                  onDragEnd={handleDragEnd}
+                >
                   <td>
                     <div className="company-cell">
+                      {isEditMode && (
+                        <div className="drag-handle">
+                          <GripVertical size={16} />
+                        </div>
+                      )}
                       <div className="company-icon" style={{ backgroundColor: `rgba(${isPositive ? '34, 197, 94' : '239, 68, 68'}, 0.1)` }}>
                         <span style={{ color }}>{item.symbol[0]}</span>
                       </div>
