@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Plus, Edit2, X, Search, Check, BarChart2, Trash2, ArrowUpRight, ChevronUp, ChevronDown, GripVertical } from 'lucide-react';
+import OrderPanel from '../components/OrderPanel';
 import './WatchlistPage.css';
 
 // Dummy data for initial implementation
@@ -58,144 +59,6 @@ const PerformanceBar = ({ low, high, current }: { low: number, high: number, cur
   );
 };
 
-const WatchlistOrderPanel = ({ stock, onClose, onSubmitOrder }: { stock: any, onClose: () => void, onSubmitOrder: (o: any) => Promise<void> }) => {
-  const [side, setSide] = useState('buy');
-  const [orderType, setOrderType] = useState('limit');
-  const [price, setPrice] = useState(stock.price?.toFixed(2) || '');
-  const [quantity, setQuantity] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [feedback, setFeedback] = useState<{type: string, message: string} | null>(null);
-
-  // When stock changes, reset default price
-  useEffect(() => {
-    setPrice(stock.price?.toFixed(2) || '');
-  }, [stock]);
-
-  const total = price && quantity ? (parseFloat(price) * parseFloat(quantity)).toFixed(2) : '0.00';
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!quantity || (orderType !== 'market' && !price)) return;
-
-    setSubmitting(true);
-    setFeedback(null);
-
-    try {
-      const order = {
-        asset_symbol: stock.symbol,
-        type: orderType,
-        side,
-        price: orderType === 'market' ? 0 : parseFloat(price),
-        quantity: parseFloat(quantity),
-      };
-      await onSubmitOrder(order);
-      setFeedback({ type: 'success', message: `${side.toUpperCase()} order submitted!` });
-      setQuantity('');
-      setTimeout(() => onClose(), 1000);
-    } catch (err) {
-      setFeedback({ type: 'error', message: 'Order failed. Try again.' });
-    }
-    setSubmitting(false);
-  };
-
-  return (
-    <div className="watchlist-order-panel">
-      <div className="card-header">
-        <div className="panel-company-info">
-          <div className="company-icon small" style={{ 
-            backgroundColor: `rgba(${stock.change >= 0 ? '34, 197, 94' : '239, 68, 68'}, 0.1)`,
-            color: stock.change >= 0 ? 'var(--color-buy)' : 'var(--color-sell)'
-          }}>
-            {stock.symbol[0]}
-          </div>
-          <div className="company-details">
-            <h3 className="company-title">{stock.name}</h3>
-            <span className="company-symbol-sub">{stock.symbol}</span>
-          </div>
-        </div>
-        <button className="btn-close-panel" onClick={onClose}><X size={18} /></button>
-      </div>
-
-      <div className="side-toggle">
-        <button
-          className={`side-btn buy-btn ${side === 'buy' ? 'active' : ''}`}
-          onClick={() => setSide('buy')}
-        >
-          Buy
-        </button>
-        <button
-          className={`side-btn sell-btn ${side === 'sell' ? 'active' : ''}`}
-          onClick={() => setSide('sell')}
-        >
-          Sell
-        </button>
-      </div>
-
-      <div className="order-type-tabs">
-        {['limit', 'market'].map(t => (
-          <button
-            key={t}
-            className={`order-type-tab ${orderType === t ? 'active' : ''}`}
-            onClick={() => setOrderType(t)}
-          >
-            {t.charAt(0).toUpperCase() + t.slice(1)}
-          </button>
-        ))}
-      </div>
-
-      <form onSubmit={handleSubmit} className="order-form">
-        {orderType !== 'market' && (
-          <div className="form-group">
-            <label>Price (INR)</label>
-            <div className="input-with-icon">
-              <span className="input-icon">₹</span>
-              <input
-                type="number"
-                step="0.01"
-                value={price}
-                onChange={e => setPrice(e.target.value)}
-                placeholder="0.00"
-                className="mono"
-              />
-            </div>
-          </div>
-        )}
-
-        <div className="form-group">
-          <label>Shares</label>
-          <input
-            type="number"
-            step="1"
-            min="1"
-            value={quantity}
-            onChange={e => setQuantity(e.target.value)}
-            placeholder="0"
-            className="mono"
-          />
-        </div>
-
-        <div className="order-total">
-          <span className="total-label">Estimated Total</span>
-          <span className="total-value mono">₹{parseFloat(total).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-        </div>
-
-        <button
-          type="submit"
-          className={`btn btn-lg order-submit-btn ${side === 'buy' ? 'btn-buy' : 'btn-sell'}`}
-          disabled={submitting || !quantity}
-        >
-          {submitting ? 'Submitting...' : `${side === 'buy' ? 'Buy' : 'Sell'} ${stock.symbol}`}
-        </button>
-
-        {feedback && (
-          <div className={`order-feedback ${feedback.type}`}>
-            {feedback.message}
-          </div>
-        )}
-      </form>
-    </div>
-  );
-};
 
 export default function WatchlistPage() {
   const [watchlists, setWatchlists] = useState([
@@ -615,8 +478,9 @@ export default function WatchlistPage() {
       {selectedTradeStock && (
         <div className="modal-overlay" onClick={() => setSelectedTradeStock(null)}>
           <div className="modal-content animate-fade-in" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px' }}>
-            <WatchlistOrderPanel 
-              stock={selectedTradeStock} 
+            <OrderPanel 
+              symbol={selectedTradeStock.symbol} 
+              currentPrice={selectedTradeStock.price}
               onClose={() => setSelectedTradeStock(null)} 
               onSubmitOrder={handleDummySubmitOrder} 
             />
