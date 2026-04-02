@@ -12,7 +12,7 @@ import PortfolioWidget from '../components/PortfolioWidget';
 import './DashboardPage.css';
 
 export default function DashboardPage() {
-  const { selectedSymbol, setMarketStats } = useMarket();
+  const { selectedSymbol, setMarketStats, isOrderActive } = useMarket();
   const [candles, setCandles] = useState([]);
   const [orderBook, setOrderBook] = useState(null);
   const [trades, setTrades] = useState([]);
@@ -175,7 +175,7 @@ export default function DashboardPage() {
 
   return (
     <div className="dashboard-page" id="dashboard-page">
-      <div className="dashboard-grid">
+      <div className={`dashboard-grid ${isOrderActive ? 'order-active' : ''}`}>
         <div className="dashboard-chart">
           <CandlestickChart
             candles={candles}

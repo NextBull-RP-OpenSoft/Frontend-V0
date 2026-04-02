@@ -34,7 +34,7 @@ export default function Sidebar() {
           <BullLogo size={24} className="logo-icon" />
           <span className="logo-text">Synthetic<span className="logo-accent">Bull</span></span>
         </div>
-        <div className="sidebar-tagline">Trading Terminal</div>
+        <div className="sidebar-tagline">Stock Trading Terminal</div>
       </div>
 
       <nav className="sidebar-nav">

@@ -1,4 +1,4 @@
-// ===== SYNTHETIC-BULL DUMMY DATA GENERATORS =====
+// ===== SYNTHETICBULL DUMMY DATA GENERATORS =====
 // All data matches the exact API response schemas from the backend
 
 // ---------- HELPERS ----------
@@ -11,18 +11,23 @@ const nanoTimestamp = (date = new Date()) => date.getTime() * 1_000_000;
 const randomBetween = (min, max) => min + Math.random() * (max - min);
 const randomInt = (min, max) => Math.floor(randomBetween(min, max));
 
-// ---------- ASSETS ----------
+// ---------- ASSETS (INDIAN STOCKS) ----------
 const ASSETS = [
-  { symbol: 'BTC', name: 'Bitcoin', initial_price: 50000, mu: 0.0001, sigma: 0.02 },
-  { symbol: 'ETH', name: 'Ethereum', initial_price: 3000, mu: 0.00008, sigma: 0.025 },
-  { symbol: 'SOL', name: 'Solana', initial_price: 150, mu: 0.00015, sigma: 0.03 },
+  { symbol: 'RELIANCE',   name: 'Reliance Industries',   initial_price: 2450.00, mu: 0.00005, sigma: 0.012 },
+  { symbol: 'TCS',        name: 'Tata Consultancy Svc',  initial_price: 3600.00, mu: 0.00006, sigma: 0.011 },
+  { symbol: 'HDFCBANK',   name: 'HDFC Bank Ltd',         initial_price: 1480.00, mu: 0.00004, sigma: 0.010 },
+  { symbol: 'INFY',       name: 'Infosys Ltd',           initial_price: 1420.00, mu: 0.00005, sigma: 0.014 },
+  { symbol: 'ICICIBANK',  name: 'ICICI Bank Ltd',        initial_price: 950.00,  mu: 0.00006, sigma: 0.012 },
+  { symbol: 'BHARTIARTL', name: 'Bharti Airtel Ltd',     initial_price: 1120.00, mu: 0.00007, sigma: 0.015 },
+  { symbol: 'ADANIENT',   name: 'Adani Enterprises Ltd', initial_price: 2500.00, mu: 0.00008, sigma: 0.025 },
+  { symbol: 'TATAMOTORS', name: 'Tata Motors Ltd',       initial_price: 1000.00, mu: 0.00006, sigma: 0.018 },
 ];
 
 // Live-like prices that drift over time
-const priceState = {};
+const priceState: Record<string, number> = {};
 ASSETS.forEach(a => { priceState[a.symbol] = a.initial_price; });
 
-function getCurrentPrice(symbol) {
+function getCurrentPrice(symbol: string) {
   const asset = ASSETS.find(a => a.symbol === symbol);
   if (!asset) return 0;
   const drift = (asset.mu - 0.5 * asset.sigma * asset.sigma) * 0.01;
@@ -39,7 +44,7 @@ export function getAssets() {
   }));
 }
 
-export function getAssetDetail(symbol) {
+export function getAssetDetail(symbol: string) {
   const a = ASSETS.find(x => x.symbol === symbol);
   if (!a) return null;
   return {
@@ -53,24 +58,25 @@ export function getAssetDetail(symbol) {
 }
 
 // ---------- ORDER BOOK ----------
-export function getOrderBook(symbol) {
-  const price = priceState[symbol] || 50000;
-  const tickSize = price > 10000 ? 5 : price > 100 ? 0.5 : 0.01;
-  const bids = [];
-  const asks = [];
+export function getOrderBook(symbol: string) {
+  const price = priceState[symbol] || 1000.00;
+  // Indian market tick size is typically 0.05
+  const tickSize = 0.05;
+  const bids: any[] = [];
+  const asks: any[] = [];
 
   for (let i = 0; i < 15; i++) {
-    const bidPrice = parseFloat((price - (i + 1) * tickSize * (1 + Math.random())).toFixed(2));
-    const askPrice = parseFloat((price + (i + 1) * tickSize * (1 + Math.random())).toFixed(2));
+    const bidPrice = parseFloat((price - (i * tickSize + Math.random() * tickSize)).toFixed(2));
+    const askPrice = parseFloat((price + (i * tickSize + Math.random() * tickSize)).toFixed(2));
     bids.push({
       price: bidPrice,
-      total_quantity: parseFloat(randomBetween(0.1, 5).toFixed(4)),
-      order_count: randomInt(1, 8),
+      total_quantity: randomInt(10, 5000),      // whole shares
+      order_count: randomInt(1, 20),
     });
     asks.push({
       price: askPrice,
-      total_quantity: parseFloat(randomBetween(0.1, 5).toFixed(4)),
-      order_count: randomInt(1, 8),
+      total_quantity: randomInt(10, 5000),
+      order_count: randomInt(1, 20),
     });
   }
 
@@ -83,20 +89,20 @@ export function getOrderBook(symbol) {
 }
 
 // ---------- CANDLES (OHLCV) ----------
-export function getCandles(symbol, interval = '1m', count = 100) {
-  const basePrice = ASSETS.find(a => a.symbol === symbol)?.initial_price || 50000;
+export function getCandles(symbol: string, interval = '1m', count = 100) {
+  const basePrice = ASSETS.find(a => a.symbol === symbol)?.initial_price || 1000.00;
   const intervalMs = { '1s': 1000, '5s': 5000, '1m': 60000, '5m': 300000 }[interval] || 60000;
   const now = Date.now();
-  const candles = [];
-  let price = basePrice * (0.95 + Math.random() * 0.1);
+  const candles: any[] = [];
+  let price = basePrice * (0.97 + Math.random() * 0.06);
 
   for (let i = count; i >= 0; i--) {
     const open = price;
-    const change = (Math.random() - 0.48) * basePrice * 0.003;
+    const change = (Math.random() - 0.48) * basePrice * 0.002;
     const close = open + change;
     const high = Math.max(open, close) + Math.random() * Math.abs(change) * 0.5;
     const low = Math.min(open, close) - Math.random() * Math.abs(change) * 0.5;
-    const volume = randomBetween(0.5, 50);
+    const volume = randomInt(5000, 1000000); // realistic share volume
     const openTime = now - i * intervalMs;
 
     candles.push({
@@ -104,7 +110,7 @@ export function getCandles(symbol, interval = '1m', count = 100) {
       high: parseFloat(high.toFixed(2)),
       low: parseFloat(low.toFixed(2)),
       close: parseFloat(close.toFixed(2)),
-      volume: parseFloat(volume.toFixed(2)),
+      volume,
       open_time: nanoTimestamp(new Date(openTime)),
       close_time: nanoTimestamp(new Date(openTime + intervalMs)),
     });
@@ -120,16 +126,16 @@ const ORDER_STATUSES = ['submitted', 'partial', 'filled', 'cancelled', 'rejected
 const ORDER_TYPES = ['limit', 'market', 'stop'];
 const SIDES = ['buy', 'sell'];
 
-let mockOrders = null;
+let mockOrders: any[] | null = null;
 
 function generateOrders() {
   if (mockOrders) return mockOrders;
   mockOrders = [];
   for (let i = 0; i < 20; i++) {
-    const sym = ASSETS[randomInt(0, 3)].symbol;
-    const price = priceState[sym] || 50000;
-    const qty = parseFloat(randomBetween(0.01, 2).toFixed(4));
-    const filledQty = parseFloat((qty * Math.random()).toFixed(4));
+    const sym = ASSETS[randomInt(0, ASSETS.length)].symbol;
+    const price = priceState[sym] || 1000.00;
+    const qty = randomInt(1, 500); // whole shares
+    const filledQty = randomInt(0, qty);
     const status = ORDER_STATUSES[randomInt(0, 5)];
     const createdAt = nanoTimestamp(new Date(Date.now() - randomInt(60000, 86400000)));
 
@@ -138,7 +144,7 @@ function generateOrders() {
       asset_symbol: sym,
       type: ORDER_TYPES[randomInt(0, 3)],
       side: SIDES[randomInt(0, 2)],
-      price: parseFloat((price * (0.95 + Math.random() * 0.1)).toFixed(2)),
+      price: parseFloat((price * (0.97 + Math.random() * 0.06)).toFixed(2)),
       quantity: qty,
       filled_quantity: status === 'filled' ? qty : status === 'partial' ? filledQty : 0,
       status,
@@ -153,11 +159,11 @@ export function getOrders() {
   return generateOrders();
 }
 
-export function getOrderById(orderId) {
+export function getOrderById(orderId: string) {
   return generateOrders().find(o => o.id === orderId) || null;
 }
 
-export function submitOrder(order) {
+export function submitOrder(order: any) {
   const newOrder = {
     id: uuid(),
     ...order,
@@ -170,7 +176,7 @@ export function submitOrder(order) {
   return { id: newOrder.id, status: 'submitted' };
 }
 
-export function cancelOrder(orderId) {
+export function cancelOrder(orderId: string) {
   if (mockOrders) {
     const order = mockOrders.find(o => o.id === orderId);
     if (order) order.status = 'cancelled';
@@ -179,19 +185,19 @@ export function cancelOrder(orderId) {
 }
 
 // ---------- TRADES ----------
-let mockTrades = null;
+let mockTrades: any[] | null = null;
 
 function generateTrades() {
   if (mockTrades) return mockTrades;
   mockTrades = [];
   for (let i = 0; i < 50; i++) {
-    const sym = ASSETS[randomInt(0, 3)].symbol;
-    const price = priceState[sym] || 50000;
+    const sym = ASSETS[randomInt(0, ASSETS.length)].symbol;
+    const price = priceState[sym] || 1000.00;
     mockTrades.push({
       id: uuid(),
       asset_symbol: sym,
-      price: parseFloat((price * (0.98 + Math.random() * 0.04)).toFixed(2)),
-      quantity: parseFloat(randomBetween(0.001, 1).toFixed(4)),
+      price: parseFloat((price * (0.99 + Math.random() * 0.02)).toFixed(2)),
+      quantity: randomInt(1, 1000), // whole shares
       aggressor_side: SIDES[randomInt(0, 2)],
       buy_order_id: uuid(),
       sell_order_id: uuid(),
@@ -214,40 +220,40 @@ export function getPublicTrades() {
 export function getPortfolio() {
   return {
     user_id: 'user-' + uuid().slice(0, 8),
-    cash_balance: 87432.56,
-    realized_pnl: 1245.80,
-    unrealized_pnl: -382.15,
+    cash_balance: 574320.56,
+    realized_pnl: 12450.80,
+    unrealized_pnl: -3820.15,
   };
 }
 
 export function getHoldings() {
   return [
     {
-      asset_symbol: 'BTC',
-      quantity: 0.5,
-      avg_cost_basis: 49200.0,
-      market_value: parseFloat((priceState.BTC * 0.5).toFixed(2)),
+      asset_symbol: 'RELIANCE',
+      quantity: 100,
+      avg_cost_basis: 2420.00,
+      market_value: parseFloat((priceState.RELIANCE * 100).toFixed(2)),
     },
     {
-      asset_symbol: 'ETH',
-      quantity: 3.2,
-      avg_cost_basis: 2850.0,
-      market_value: parseFloat((priceState.ETH * 3.2).toFixed(2)),
+      asset_symbol: 'TCS',
+      quantity: 50,
+      avg_cost_basis: 3580.00,
+      market_value: parseFloat((priceState.TCS * 50).toFixed(2)),
     },
     {
-      asset_symbol: 'SOL',
-      quantity: 15.0,
-      avg_cost_basis: 142.50,
-      market_value: parseFloat((priceState.SOL * 15.0).toFixed(2)),
+      asset_symbol: 'HDFCBANK',
+      quantity: 200,
+      avg_cost_basis: 1450.00,
+      market_value: parseFloat((priceState.HDFCBANK * 200).toFixed(2)),
     },
   ];
 }
 
 export function getPnL() {
   return {
-    realized_pnl: 1245.80,
-    unrealized_pnl: -382.15,
-    total_pnl: 863.65,
+    realized_pnl: 12450.80,
+    unrealized_pnl: -3820.15,
+    total_pnl: 8630.65,
   };
 }
 
@@ -256,14 +262,14 @@ export function getBots() {
   return [
     {
       id: 'bot-' + uuid().slice(0, 8),
-      name: 'Market Maker',
+      name: 'Nifty Scalper',
       bot_type: 'market_maker',
       is_active: true,
-      config: JSON.stringify({ spread_pct: 0.002, order_size: 0.1, max_inventory: 2.0, num_levels: 3 }),
+      config: JSON.stringify({ spread_pct: 0.002, order_size: 100, max_inventory: 5000, num_levels: 5 }),
     },
     {
       id: 'bot-' + uuid().slice(0, 8),
-      name: 'Alpha Bot',
+      name: 'Trend Follower',
       bot_type: 'alpha',
       is_active: false,
       config: JSON.stringify({ fast_ma: 10, slow_ma: 30, rsi_period: 14, rsi_overbought: 70, rsi_oversold: 30 }),
@@ -274,24 +280,23 @@ export function getBots() {
 // ---------- ADMIN / ENGINE STATS ----------
 export function getEngineStats() {
   return {
-    total_orders_submitted: 15847,
-    total_trades_executed: 8923,
-    orders_per_symbol: { BTC: 6200, ETH: 5100, SOL: 4547 },
-    trades_per_symbol: { BTC: 3700, ETH: 3100, SOL: 2123 },
-    avg_order_latency_ms: 0.042,
-    avg_match_latency_ms: 0.018,
-    uptime_seconds: 7245,
+    total_orders_submitted: 45847,
+    total_trades_executed: 28923,
+    orders_per_symbol: { RELIANCE: 12000, TCS: 11000, HDFCBANK: 8800, INFY: 6100, ICICIBANK: 4900, BHARTIARTL: 3047 },
+    trades_per_symbol: { RELIANCE: 8500, TCS: 7800, HDFCBANK: 5600, INFY: 4200, ICICIBANK: 2100, BHARTIARTL: 723 },
+    avg_order_latency_ms: 0.038,
+    avg_match_latency_ms: 0.015,
+    uptime_seconds: 17245,
   };
 }
 
 // ---------- SIMULATED TRADE STREAM ----------
-// Returns a new random trade periodically (for simulating WebSocket TRADE_PRINT)
-export function generateLiveTrade(symbol) {
+export function generateLiveTrade(symbol: string) {
   const price = getCurrentPrice(symbol);
   return {
     type: 'TRADE_PRINT',
     price: parseFloat(price.toFixed(2)),
-    qty: parseFloat(randomBetween(0.001, 0.5).toFixed(4)),
+    qty: randomInt(1, 1000), // whole shares
     side: Math.random() > 0.5 ? 'buy' : 'sell',
     symbol,
   };

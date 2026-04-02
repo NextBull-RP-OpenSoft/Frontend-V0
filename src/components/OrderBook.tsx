@@ -51,20 +51,20 @@ export default function OrderBook({ orderBook }) {
                 className="orderbook-bar ask-bar"
                 style={{ width: `${(ask.total_quantity / maxQty) * 100}%` }}
               />
-              <span className="orderbook-price mono text-sell">{ask.price.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-              <span className="orderbook-size mono">{ask.total_quantity.toFixed(2)}</span>
-              <span className="orderbook-cum mono">{ask.cumulative.toFixed(2)}</span>
+              <span className="orderbook-price mono text-sell">{ask.price.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+              <span className="orderbook-size mono">{ask.total_quantity.toLocaleString('en-IN')}</span>
+              <span className="orderbook-cum mono">{ask.cumulative.toLocaleString('en-IN')}</span>
             </div>
           ))}
         </div>
 
         {/* Spread / Mid Price */}
         <div className="orderbook-spread">
-          <span className="spread-price mono">${mid_price?.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+          <span className="spread-price mono">₹{mid_price?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
           <span className="spread-label">Mid Price</span>
           {displayAsks[0] && displayBids[0] && (
             <span className="spread-value mono">
-              Spread: ${(displayAsks[0].price - displayBids[0].price).toFixed(2)}
+              Spread: ₹{(displayAsks[0].price - displayBids[0].price).toFixed(2)}
             </span>
           )}
         </div>
@@ -77,9 +77,9 @@ export default function OrderBook({ orderBook }) {
                 className="orderbook-bar bid-bar"
                 style={{ width: `${(bid.total_quantity / maxQty) * 100}%` }}
               />
-              <span className="orderbook-price mono text-buy">{bid.price.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-              <span className="orderbook-size mono">{bid.total_quantity.toFixed(2)}</span>
-              <span className="orderbook-cum mono">{bid.cumulative.toFixed(2)}</span>
+              <span className="orderbook-price mono text-buy">{bid.price.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+              <span className="orderbook-size mono">{bid.total_quantity.toLocaleString('en-IN')}</span>
+              <span className="orderbook-cum mono">{bid.cumulative.toLocaleString('en-IN')}</span>
             </div>
           ))}
         </div>

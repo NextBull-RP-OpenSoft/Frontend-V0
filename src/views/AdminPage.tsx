@@ -53,26 +53,28 @@ export default function AdminPage() {
     <div className="admin-page animate-fade-in" id="admin-page">
       <div className="page-header">
         <h1>Admin Panel</h1>
-        <p>Engine statistics and market controls</p>
+        <p>Exchange engine statistics and equity market controls</p>
       </div>
 
       {stats && (
         <div className="grid-4 admin-stats">
           <StatsCard
             title="Orders Submitted"
-            value={stats.total_orders_submitted.toLocaleString()}
+            value={stats.total_orders_submitted.toLocaleString('en-IN')}
+            subtitle="All Symbols"
             icon={<FileText size={20} />}
             variant="accent"
             trend="up"
-            trendValue="All time"
+            trendValue="Overall"
           />
           <StatsCard
             title="Trades Executed"
-            value={stats.total_trades_executed.toLocaleString()}
+            value={stats.total_trades_executed.toLocaleString('en-IN')}
+            subtitle="Matched Orders"
             icon={<Zap size={20} />}
             variant="accent"
             trend="up"
-            trendValue="All time"
+            trendValue="Overall"
           />
           <StatsCard
             title="Avg Order Latency"
@@ -80,12 +82,17 @@ export default function AdminPage() {
             subtitle="Per order processing"
             icon={<Clock size={20} />}
             variant="accent"
+            trend="up"
+            trendValue="Stable"
           />
           <StatsCard
             title="Uptime"
             value={formatUptime(stats.uptime_seconds)}
+            subtitle="Engine Status"
             icon={<Activity size={20} />}
             variant="buy"
+            trend="up"
+            trendValue="Live"
           />
         </div>
       )}
@@ -112,8 +119,8 @@ export default function AdminPage() {
                 return (
                   <tr key={sym}>
                     <td><span className="order-symbol">{sym}</span></td>
-                    <td className="mono">{orders.toLocaleString()}</td>
-                    <td className="mono">{trades.toLocaleString()}</td>
+                    <td className="mono">{orders.toLocaleString('en-IN')}</td>
+                    <td className="mono">{trades.toLocaleString('en-IN')}</td>
                     <td>
                       <div className="fill-rate">
                         <div className="fill-rate-bar">
@@ -139,7 +146,7 @@ export default function AdminPage() {
             </span>
           </div>
           <p className="admin-description">
-            Pause or resume the synthetic order generation engine.
+            Pause or resume the synthetic equity order generation engine.
           </p>
           <button
             className={`btn btn-lg ${marketPaused ? 'btn-primary' : 'btn-sell'}`}
@@ -156,7 +163,7 @@ export default function AdminPage() {
             <span className="badge badge-accent">Price Simulation</span>
           </div>
           <p className="admin-description">
-            Adjust the Geometric Brownian Motion drift and volatility for each asset.
+            Adjust the Geometric Brownian Motion drift and volatility for each stock.
           </p>
           <div className="gbm-params-grid">
             {Object.entries(gbmParams).map(([symbol, params]) => (
@@ -168,10 +175,10 @@ export default function AdminPage() {
                     <input
                       type="number"
                       step="0.00001"
-                      value={params.mu}
+                      value={(params as any).mu}
                       onChange={e => setGbmParams(prev => ({
                         ...prev,
-                        [symbol]: { ...prev[symbol], mu: parseFloat(e.target.value) || 0 }
+                        [symbol]: { ...(prev[symbol] as any), mu: parseFloat(e.target.value) || 0 }
                       }))}
                       className="mono"
                       id={`gbm-mu-${symbol.toLowerCase()}`}
@@ -182,10 +189,10 @@ export default function AdminPage() {
                     <input
                       type="number"
                       step="0.001"
-                      value={params.sigma}
+                      value={(params as any).sigma}
                       onChange={e => setGbmParams(prev => ({
                         ...prev,
-                        [symbol]: { ...prev[symbol], sigma: parseFloat(e.target.value) || 0 }
+                        [symbol]: { ...(prev[symbol] as any), sigma: parseFloat(e.target.value) || 0 }
                       }))}
                       className="mono"
                       id={`gbm-sigma-${symbol.toLowerCase()}`}
