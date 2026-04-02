@@ -410,11 +410,11 @@
   animation: fadeIn 0.3s ease;
 }
 
-.form-group {
+.auth-split-layout .form-group {
   margin-bottom: clamp(6px, 1.2vh, 16px);
 }
 
-.form-group label {
+.auth-split-layout .form-group label {
   display: block;
   font-size: var(--text-xs);
   font-weight: 600;
@@ -424,7 +424,7 @@
   letter-spacing: 0.05em;
 }
 
-.form-group input {
+.auth-split-layout .form-group input {
   padding: clamp(8px, 1.2vh, 14px) 14px;
   font-size: var(--text-base);
   border-radius: var(--radius-md);
@@ -536,7 +536,7 @@
   .auth-logo-text {
     font-size: var(--text-xl);
   }
-  .form-group input {
+  .auth-split-layout .form-group input {
     padding: clamp(7px, 1vh, 12px) 12px;
     font-size: var(--text-sm);
   }
@@ -570,14 +570,14 @@
     font-size: var(--text-xs);
     margin-bottom: clamp(4px, 1vh, 12px);
   }
-  .form-group {
+  .auth-split-layout .form-group {
     margin-bottom: clamp(4px, 0.8vh, 10px);
   }
-  .form-group label {
+  .auth-split-layout .form-group label {
     font-size: 10px;
     margin-bottom: 2px;
   }
-  .form-group input {
+  .auth-split-layout .form-group input {
     padding: clamp(6px, 0.9vh, 10px) 10px;
     font-size: var(--text-sm);
   }
@@ -606,13 +606,13 @@
   .auth-subtitle {
     margin-bottom: 6px;
   }
-  .form-group {
+  .auth-split-layout .form-group {
     margin-bottom: 6px;
   }
-  .form-group label {
+  .auth-split-layout .form-group label {
     margin-bottom: 2px;
   }
-  .form-group input {
+  .auth-split-layout .form-group input {
     padding: 7px 12px;
   }
   .auth-submit {
@@ -643,10 +643,10 @@
   .auth-subtitle {
     display: none;
   }
-  .form-group {
+  .auth-split-layout .form-group {
     margin-bottom: 4px;
   }
-  .form-group input {
+  .auth-split-layout .form-group input {
     padding: 6px 10px;
     font-size: var(--text-sm);
   }

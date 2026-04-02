@@ -5,88 +5,53 @@ import { AlertCircle, CheckCircle2, Info, TrendingUp, TrendingDown, Zap, X } fro
 import { useMarket } from '../context/MarketContext';
 import './OrderPanel.css';
 
-export default function OrderPanel({ symbol, currentPrice, onSubmitOrder, cashBalance, onClose }) {
-  const { isOrderActive, setIsOrderActive } = useMarket();
-  const [side, setSide] = useState<'buy' | 'sell'>('buy');
-  const [orderType, setOrderType] = useState<'limit' | 'market'>('limit');
-  const [price, setPrice] = useState('');
+export default function OrderPanel({ symbol, currentPrice, onSubmitOrder, cashBalance }) {
+  const { selectedSymbol, isOrderActive, setIsOrderActive } = useMarket();
+  const activeSymbol = symbol || selectedSymbol;
+
+  const [side, setSide] = useState('buy');
+  const [orderType, setOrderType] = useState('market');
+  const [price, setPrice] = useState(currentPrice?.toFixed(2) || '');
   const [quantity, setQuantity] = useState('');
+  const [stopPrice, setStopPrice] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [feedback, setFeedback] = useState(null);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [errors, setErrors] = useState<{ price?: string; quantity?: string }>({});
-  const prevSymbol = useRef(symbol);
+  const [errors, setErrors] = useState<Record<string, string | undefined>>({});
   const quantityRef = useRef<HTMLInputElement>(null);
 
-  // Auto-focus quantity input when order panel becomes active
-  useEffect(() => {
-    if (isOrderActive && quantityRef.current) {
-      setTimeout(() => quantityRef.current?.focus(), 50);
-    }
-  }, [isOrderActive]);
+  const isBuy = side === 'buy';
+  const parsedQty = parseInt(quantity, 10) || 0;
+  const accentColor = isBuy ? 'var(--color-buy)' : 'var(--color-sell)';
 
-  // Seed price from currentPrice when it first becomes available
-  useEffect(() => {
-    if (currentPrice && !price) {
-      setPrice(currentPrice.toFixed(2));
-    }
-  }, [currentPrice]); // eslint-disable-line
+  // Sync price when symbol/currentPrice changes from external navbar
+  React.useEffect(() => {
+    setPrice(currentPrice?.toFixed(2) || '');
+    setQuantity('');
+    setStopPrice('');
+  }, [activeSymbol, currentPrice]);
 
-  // Reset on symbol change
-  useEffect(() => {
-    if (prevSymbol.current !== symbol) {
-      setQuantity('');
-      setErrors({});
-      setFeedback(null);
-      setShowConfirm(false);
-      prevSymbol.current = symbol;
-    }
-  }, [symbol]);
+  const total = price && quantity ? (parseFloat(price) * parseFloat(quantity)).toFixed(2) : '0.00';
+  const estimatedTotal = orderType === 'market'
+    ? (currentPrice || 0) * parsedQty
+    : parseFloat(price || '0') * parsedQty;
+  const isValidOrder = parsedQty > 0 && (orderType === 'market' || parseFloat(price) > 0);
 
-  // Derived values
-  const parsedPrice = orderType === 'market'
-    ? (currentPrice || 0)
-    : (price ? parseFloat(price) : 0);
-  const parsedQty = quantity ? Math.max(0, parseInt(quantity, 10)) : 0;
-  const estimatedTotal = parsedPrice > 0 && parsedQty > 0 ? parsedPrice * parsedQty : 0;
-  const buyingPower = cashBalance || 0;
-  const maxShares = parsedPrice > 0 ? Math.floor(buyingPower / parsedPrice) : 0;
-  const isValidOrder = parsedQty > 0 && (orderType === 'market' || parsedPrice > 0);
-
-  // Real-time validation
-  const validate = () => {
-    const errs: typeof errors = {};
-    if (orderType !== 'market' && (!price || parseFloat(price) <= 0)) {
-      errs.price = 'Enter a valid price';
-    }
-    if (!quantity || parseInt(quantity, 10) <= 0) {
-      errs.quantity = 'Enter number of shares';
-    }
-    setErrors(errs);
-    return Object.keys(errs).length === 0;
-  };
-
-  const handleSideChange = (newSide: 'buy' | 'sell') => {
-    setSide(newSide);
-    setErrors({});
-    setFeedback(null);
-    setShowConfirm(false);
+  const handleSideChange = (s: string) => {
+    setSide(s);
     setIsOrderActive(true);
   };
 
-  const handleTypeChange = (t: 'limit' | 'market') => {
+  const handleTypeChange = (t: string) => {
     setOrderType(t);
-    setErrors({});
-    setShowConfirm(false);
-    if (t === 'market') setPrice('');
-    else if (!price && currentPrice) setPrice(currentPrice.toFixed(2));
+    if (t === 'market') setPrice(currentPrice?.toFixed(2) || '');
   };
 
-
-
-  const handleSubmitClick = (e: React.FormEvent) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!validate()) return;
+    if (!quantity) return;
+    if (orderType === 'stop' && (!price || !stopPrice)) return;
+    if (orderType === 'limit' && !price) return;
     setShowConfirm(true);
   };
 
@@ -96,7 +61,7 @@ export default function OrderPanel({ symbol, currentPrice, onSubmitOrder, cashBa
     setFeedback(null);
     try {
       const order = {
-        asset_symbol: symbol,
+        asset_symbol: activeSymbol,
         type: orderType,
         side,
         price: orderType === 'market' ? 0 : parseFloat(price),
@@ -106,7 +71,7 @@ export default function OrderPanel({ symbol, currentPrice, onSubmitOrder, cashBa
       await onSubmitOrder(order);
       setFeedback({
         type: 'success',
-        message: `${side === 'buy' ? 'Buy' : 'Sell'} order placed for ${quantity} share${parseInt(quantity) > 1 ? 's' : ''} of ${symbol}!`,
+        message: `${side === 'buy' ? 'Buy' : 'Sell'} order placed for ${quantity} share${parseInt(quantity) > 1 ? 's' : ''} of ${activeSymbol}!`,
       });
       setQuantity('');
       setIsOrderActive(false); // Revert layout on success
@@ -117,8 +82,7 @@ export default function OrderPanel({ symbol, currentPrice, onSubmitOrder, cashBa
     setTimeout(() => setFeedback(null), 4000);
   };
 
-  const isBuy = side === 'buy';
-  const accentColor = isBuy ? 'var(--color-buy)' : 'var(--color-sell)';
+
 
   return (
     <div className={`order-panel card op-${side}`} id="order-panel">
@@ -126,7 +90,7 @@ export default function OrderPanel({ symbol, currentPrice, onSubmitOrder, cashBa
       <div className="op-header">
         <div className="op-header-left">
           <span className="op-title">Place Order</span>
-          <span className="op-symbol-badge">{symbol}</span>
+          <span className="op-symbol-badge">{activeSymbol}</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           {currentPrice > 0 && (
@@ -173,9 +137,9 @@ export default function OrderPanel({ symbol, currentPrice, onSubmitOrder, cashBa
         </button>
       </div>
 
-      {/* ── Order Type Tabs ── */}
-      <div className="op-type-tabs">
-        {(['limit', 'market'] as const).map(t => (
+      {/* Order Type */}
+      <div className="order-type-tabs">
+        {['market', 'stop'].map(t => (
           <button
             key={t}
             className={`op-type-tab ${orderType === t ? 'active' : ''}`}
@@ -183,55 +147,54 @@ export default function OrderPanel({ symbol, currentPrice, onSubmitOrder, cashBa
             id={`order-type-${t}`}
             type="button"
           >
-            {t === 'market' && <Zap size={11} />}
-            {t.charAt(0).toUpperCase() + t.slice(1)}
+            {t === 'stop' ? 'Limit' : t.charAt(0).toUpperCase() + t.slice(1)}
           </button>
         ))}
       </div>
 
-      <form onSubmit={handleSubmitClick} className="op-form" noValidate>
+      <form onSubmit={handleSubmit} className="order-form">
+        {/* Price (not for market orders) */}
 
-        {/* ── Market notice ── */}
-        {orderType === 'market' && (
-          <div className="op-market-notice">
-            <Info size={13} />
-            Executed instantly at best available market price
-          </div>
-        )}
 
-        {/* ── Price input ── */}
-        {orderType !== 'market' && (
-          <div className={`op-field ${errors.price ? 'has-error' : ''}`}>
-            <label className="op-label">
-              Price <span className="op-label-unit">INR</span>
-            </label>
-            <div className="op-input-wrap">
-              <span className="op-input-prefix">₹</span>
-              <input
-                type="number"
-                step="0.01"
-                min="0.01"
-                value={price}
-                onChange={e => { setPrice(e.target.value); setErrors(prev => ({ ...prev, price: undefined })); }}
-                placeholder="Enter price"
-                className="mono op-input"
-                id="input-price"
-              />
+        {/* Stop Price */}
+        {orderType === 'stop' && (
+          <>
+            <div className="form-group">
+              <label>Limit Price (INR)</label>
+              <div className="input-with-icon">
+                <span className="input-icon">₹</span>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={price}
+                  onChange={e => setPrice(e.target.value)}
+                  placeholder="0.00"
+                  className="mono"
+                  id="input-price"
+                />
+              </div>
             </div>
-            {errors.price && <span className="op-error-msg">{errors.price}</span>}
-          </div>
+            <div className="form-group">
+              <label>Stop Loss (INR)</label>
+              <div className="input-with-icon">
+                <span className="input-icon">₹</span>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={stopPrice}
+                  onChange={e => setStopPrice(e.target.value)}
+                  placeholder="0.00"
+                  className="mono"
+                  id="input-stop-price"
+                />
+              </div>
+            </div>
+          </>
         )}
 
-
-
-        {/* ── Shares input ── */}
-        <div className={`op-field ${errors.quantity ? 'has-error' : ''}`}>
-          <div className="op-label-row">
-            <label className="op-label">Shares</label>
-            {isBuy && orderType !== 'market' && parsedPrice > 0 && (
-              <span className="op-max-hint">Max: {maxShares.toLocaleString('en-IN')} shares</span>
-            )}
-          </div>
+        {/* Quantity */}
+        <div className="form-group">
+          <label>Shares</label>
           <input
             ref={quantityRef}
             type="number"
@@ -248,31 +211,10 @@ export default function OrderPanel({ symbol, currentPrice, onSubmitOrder, cashBa
 
 
 
-        {/* ── Order Summary ── */}
-        <div className="op-summary">
-          <div className="op-summary-row">
-            <span className="op-summary-label">Est. Total</span>
-            <span className="op-summary-value mono" style={{ color: accentColor }}>
-              {estimatedTotal > 0
-                ? `₹${estimatedTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-                : '—'}
-            </span>
-          </div>
-          <div className="op-summary-row">
-            <span className="op-summary-label">Buying Power</span>
-            <span className="op-summary-value mono">
-              ₹{buyingPower.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </span>
-          </div>
-          {estimatedTotal > 0 && isBuy && (
-            <div className="op-summary-row">
-              <span className="op-summary-label">Remaining</span>
-              <span className={`op-summary-value mono ${buyingPower - estimatedTotal < 0 ? 'op-insufficient' : ''}`}>
-                ₹{Math.max(0, buyingPower - estimatedTotal).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                {buyingPower - estimatedTotal < 0 && <span className="op-insufficient-flag"> ✕ Insufficient</span>}
-              </span>
-            </div>
-          )}
+        {/* Total */}
+        <div className="order-total">
+          <span className="total-label">Estimated Total</span>
+          <span className="total-value mono">₹{parseFloat(total).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
         </div>
 
         {/* ── Submit ── */}
@@ -290,7 +232,7 @@ export default function OrderPanel({ symbol, currentPrice, onSubmitOrder, cashBa
           ) : (
             <>
               {isBuy ? <TrendingUp size={15} /> : <TrendingDown size={15} />}
-              {isBuy ? 'Buy' : 'Sell'} {parsedQty > 0 ? parsedQty : ''} {symbol}
+              {isBuy ? 'Buy' : 'Sell'} {parsedQty > 0 ? parsedQty : ''} {activeSymbol}
             </>
           )}
         </button>
@@ -318,7 +260,7 @@ export default function OrderPanel({ symbol, currentPrice, onSubmitOrder, cashBa
               </div>
               <div className="op-confirm-row">
                 <span>Symbol</span>
-                <span className="mono">{symbol}</span>
+                <span className="mono">{activeSymbol}</span>
               </div>
               <div className="op-confirm-row">
                 <span>Shares</span>

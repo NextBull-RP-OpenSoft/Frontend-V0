@@ -1,6 +1,16 @@
 // ===== WEBSOCKET SERVICE =====
-// Singleton connection to ws://localhost:4000/ws
 // Handles connect, reconnect, subscribe, and message routing.
+import { mapSymbols, SYMBOL_MAP } from './api/client';
+
+// Create a reverse map for outbound messages
+const REVERSE_SYMBOL_MAP = Object.entries(SYMBOL_MAP).reduce((acc, [crypto, stock]) => {
+    acc[stock] = crypto;
+    return acc;
+}, {} as Record<string, string>);
+
+function mapToBackend(symbol: string): string {
+    return REVERSE_SYMBOL_MAP[symbol] || symbol;
+}
 
 const WS_URL = 'ws://localhost:4000/ws';
 const MAX_BACKOFF_MS = 30_000;
@@ -20,7 +30,8 @@ function notifyListeners(msg) {
 
 function resubscribeAll() {
     activeSubscriptions.forEach(symbol => {
-        sendRaw({ type: 'SUBSCRIBE', symbol });
+        // Map symbol back to crypto for backend subscription
+        sendRaw({ type: 'SUBSCRIBE', symbol: mapToBackend(symbol) });
     });
 }
 
@@ -56,7 +67,9 @@ export function connect() {
 
     ws.onmessage = (event) => {
         try {
-            const data = JSON.parse(event.data);
+            const raw = JSON.parse(event.data);
+            // Map crypto symbols (BTC) to safe UI symbols (RELIANCE)
+            const data = mapSymbols(raw);
             notifyListeners(data);
         } catch (_) { }
     };
@@ -84,10 +97,10 @@ export function disconnect() {
     }
 }
 
-/** Subscribe to a symbol channel (or pass "" / omit for the "all" channel). */
+/** Subscribe to a symbol channel. Will map Indian stock back to crypto for backend. */
 export function subscribe(symbol = '') {
     activeSubscriptions.add(symbol);
-    sendRaw({ type: 'SUBSCRIBE', symbol });
+    sendRaw({ type: 'SUBSCRIBE', symbol: mapToBackend(symbol) });
 }
 
 /** Remove a symbol from active subscriptions (won't resubscribe on reconnect). */
@@ -101,11 +114,11 @@ export function onMessage(handler) {
     return () => listeners.delete(handler);
 }
 
-/** Send a LIMIT_ORDER via WebSocket. Returns false if not connected. */
+/** Send a LIMIT_ORDER via WebSocket. Automatically maps symbol to backend crypto code. */
 export function sendLimitOrder({ symbol, side, price, size, clientOrderId }) {
     return sendRaw({
         type: 'LIMIT_ORDER',
-        symbol,
+        symbol: mapToBackend(symbol),
         side,
         price,
         size,
