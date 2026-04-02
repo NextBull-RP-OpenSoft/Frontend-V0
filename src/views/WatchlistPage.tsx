@@ -99,7 +99,7 @@ const WatchlistOrderPanel = ({ stock, onClose, onSubmitOrder }: { stock: any, on
   };
 
   return (
-    <div className="watchlist-order-panel card">
+    <div className="watchlist-order-panel">
       <div className="card-header">
         <div className="panel-company-info">
           <div className="company-icon small" style={{ 
@@ -146,9 +146,9 @@ const WatchlistOrderPanel = ({ stock, onClose, onSubmitOrder }: { stock: any, on
       <form onSubmit={handleSubmit} className="order-form">
         {orderType !== 'market' && (
           <div className="form-group">
-            <label>Price (USD)</label>
+            <label>Price (INR)</label>
             <div className="input-with-icon">
-              <span className="input-icon">$</span>
+              <span className="input-icon">₹</span>
               <input
                 type="number"
                 step="0.01"
@@ -176,7 +176,7 @@ const WatchlistOrderPanel = ({ stock, onClose, onSubmitOrder }: { stock: any, on
 
         <div className="order-total">
           <span className="total-label">Estimated Total</span>
-          <span className="total-value mono">${parseFloat(total).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+          <span className="total-value mono">₹{parseFloat(total).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
         </div>
 
         <button
@@ -266,6 +266,17 @@ export default function WatchlistPage() {
       setTimeout(() => stockSearchRef.current?.focus(), 100);
     }
   }, [isAddStocksModalOpen]);
+
+  useEffect(() => {
+    if (isModalOpen || isAddStocksModalOpen || selectedTradeStock) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isModalOpen, isAddStocksModalOpen, selectedTradeStock]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -425,7 +436,7 @@ export default function WatchlistPage() {
       </div>
 
       <div className="watchlist-split-container">
-        <div className={`table-wrapper ${selectedTradeStock ? 'compressed' : ''}`}>
+        <div className="table-wrapper">
           <div className="watchlist-container">
             <table className="watchlist-table">
           <thead>
@@ -464,7 +475,7 @@ export default function WatchlistPage() {
                     </div>
                   </td>
                   <td align="center"><Sparkline data={item.trend} color={color} /></td>
-                  <td align="right" className="mono price-value">${item.price.toFixed(2)}</td>
+                  <td align="right" className="mono price-value">₹{item.price.toFixed(2)}</td>
                   <td align="right">
                     <div className="change-cell">
                       <span className={`change-value ${isPositive ? 'text-buy' : 'text-sell'}`}>{isPositive ? '+' : ''}{item.change.toFixed(2)}</span>
@@ -489,17 +500,19 @@ export default function WatchlistPage() {
         </table>
           </div>
         </div>
+      </div>
 
-        <div className={`order-panel-wrapper ${selectedTradeStock ? 'open' : ''}`}>
-          {selectedTradeStock && (
+      {selectedTradeStock && (
+        <div className="modal-overlay" onClick={() => setSelectedTradeStock(null)}>
+          <div className="modal-content animate-fade-in" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px' }}>
             <WatchlistOrderPanel 
               stock={selectedTradeStock} 
               onClose={() => setSelectedTradeStock(null)} 
               onSubmitOrder={handleDummySubmitOrder} 
             />
-          )}
+          </div>
         </div>
-      </div>
+      )}
 
       {(isModalOpen || isAddStocksModalOpen) && (
         <div className="modal-overlay" onClick={handleCloseModal}>
