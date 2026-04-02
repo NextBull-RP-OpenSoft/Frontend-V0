@@ -1,7 +1,3 @@
-/* ================================================
-   ORDER PANEL — Professional Trading UI
-   ================================================ */
-
 .order-panel {
   display: flex;
   flex-direction: column;
@@ -9,7 +5,14 @@
   padding: 0;
   overflow: hidden;
   position: relative;
+  animation: panelSlideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
+
+@keyframes panelSlideIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 
 /* ── Accent border top based on side ── */
 .op-buy {
@@ -95,10 +98,11 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--bg-input);
   border-radius: var(--radius-md);
   padding: 4px;
   margin: 0 16px;
+  border: 1px solid var(--border-primary);
 }
 
 .op-side-btn {
@@ -145,14 +149,65 @@
 .op-buy-btn.active {
   background: var(--color-buy);
   color: #fff;
-  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.2);
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.25);
+  animation: activePulseBuy 2s infinite;
 }
 
 .op-sell-btn.active {
   background: var(--color-sell);
   color: #fff;
-  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25);
+  animation: activePulseSell 2s infinite;
 }
+
+@keyframes activePulseBuy {
+  0% { box-shadow: 0 4px 12px rgba(34, 197, 94, 0.25); }
+  50% { box-shadow: 0 4px 20px rgba(34, 197, 94, 0.4); }
+  100% { box-shadow: 0 4px 12px rgba(34, 197, 94, 0.25); }
+}
+
+@keyframes activePulseSell {
+  0% { box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25); }
+  50% { box-shadow: 0 4px 20px rgba(239, 68, 68, 0.4); }
+  100% { box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25); }
+}
+
+
+[data-theme="light"] .op-side-toggle {
+  background: #ffffff; 
+  border: 1px solid #e2e8f0;
+}
+
+[data-theme="light"] .op-side-btn:not(.active) {
+  background: #ffffff;
+  border-color: transparent;
+  color: var(--text-muted);
+}
+
+[data-theme="light"] .op-side-btn.active {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* ── Order Type Tabs (Market/Limit) ── */
+[data-theme="light"] .order-type-tabs {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+}
+
+[data-theme="light"] .op-type-tab.active {
+  background: #ffffff;
+  color: var(--accent);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e2e8f0;
+}
+
+/* ── Inputs ── */
+[data-theme="light"] .op-input,
+[data-theme="light"] .form-group input {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+}
+
 
 .order-type-tabs {
   display: flex;
@@ -170,18 +225,22 @@
   font-weight: 600;
   color: var(--text-muted);
   border-bottom: 2px solid transparent;
-  transition: all var(--transition-fast);
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  cursor: pointer;
 }
 
 .op-type-tab:hover {
   color: var(--text-primary);
+  transform: translateY(-1px);
 }
 
 .op-type-tab.active {
   background: var(--bg-elevated);
   color: var(--accent);
   box-shadow: var(--shadow-sm);
+  transform: scale(1.02);
 }
+
 
 /* ================================================
    FORM BODY
@@ -199,14 +258,16 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
+  animation: formItemEntry 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-.order-panel .form-group label {
-  font-size: var(--text-xs);
-  font-weight: 600;
-  color: var(--text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+.order-panel .form-group:nth-child(1) { animation-delay: 0.1s; }
+.order-panel .form-group:nth-child(2) { animation-delay: 0.15s; }
+.order-panel .form-group:nth-child(3) { animation-delay: 0.2s; }
+
+@keyframes formItemEntry {
+  from { opacity: 0; transform: translateX(-10px); }
+  to { opacity: 1; transform: translateX(0); }
 }
 
 .order-panel .form-group input {
@@ -218,12 +279,15 @@
   font-size: var(--text-sm);
   padding: 9px 12px;
   outline: none;
-  transition: border-color var(--transition-fast);
+  transition: all var(--transition-base);
 }
 
 .order-panel .form-group input:focus {
   border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-muted);
+  transform: translateY(-1px);
 }
+
 
 .input-with-icon {
   position: relative;
@@ -403,10 +467,22 @@
   font-size: var(--text-sm);
   font-weight: 700;
   letter-spacing: 0.04em;
-  transition: all var(--transition-base);
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
   cursor: pointer;
   border: none;
+  position: relative;
+  overflow: hidden;
 }
+
+.op-submit-btn:hover:not(:disabled) {
+  transform: scale(1.02) translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+.op-submit-btn:active:not(:disabled) {
+  transform: scale(0.98) translateY(0);
+}
+
 
 .op-submit-buy {
   background: var(--color-buy);

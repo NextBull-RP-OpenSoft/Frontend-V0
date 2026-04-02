@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 import { BarChart2, RefreshCw, Info, Clock, X } from 'lucide-react';
 import * as api from '../services/api';
 import { useMarket } from '../context/MarketContext';
-import OrderPanel from '../components/OrderPanel';
 import './OrdersPage.css';
 
 const STATUS_TABS = ['all', 'submitted', 'partial', 'executed', 'cancelled'];
@@ -36,11 +35,6 @@ export default function OrdersPage() {
     setOrders(normalized);
   }).catch(() => { });
 
-  const handleOrderSubmit = async (order: any) => {
-    await api.submitOrder(order);
-    loadOrders(); // refresh after placing an order
-  };
-
   useEffect(() => {
     loadOrders();
     const interval = setInterval(loadOrders, 5000);
@@ -65,7 +59,6 @@ export default function OrdersPage() {
     setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: 'cancelled' } : o));
   };
 
-  const currentAssetPrice = assets?.find(s => s.symbol === selectedSymbol)?.current_price || 2450.85;
 
   return (
     <div className="orders-page animate-fade-in" id="orders-page">
@@ -74,8 +67,7 @@ export default function OrdersPage() {
         <p>View and manage your trading orders</p>
       </div>
 
-      <div className="orders-page-layout">
-        <div className="orders-page-main">
+      <div className="orders-page-main">
           {/* Filter Tabs */}
           <div className="orders-tabs">
             {STATUS_TABS.map(tab => (
@@ -172,17 +164,6 @@ export default function OrdersPage() {
               </tbody>
             </table>
           </div>
-        </div>
-
-        {/* Right Side Panel */}
-        <div className="orders-page-sidebar">
-          <OrderPanel 
-            symbol={selectedSymbol} 
-            currentPrice={currentAssetPrice} 
-            onSubmitOrder={handleOrderSubmit}
-            cashBalance={100000}
-          />
-        </div>
       </div>
     </div>
   );
