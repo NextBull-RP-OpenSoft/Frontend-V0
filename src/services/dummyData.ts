@@ -13,14 +13,14 @@ const randomInt = (min, max) => Math.floor(randomBetween(min, max));
 
 // ---------- ASSETS (INDIAN STOCKS) ----------
 const ASSETS = [
-  { symbol: 'RELIANCE',   name: 'Reliance Industries',   initial_price: 2450.00, mu: 0.00005, sigma: 0.012 },
-  { symbol: 'TCS',        name: 'Tata Consultancy Svc',  initial_price: 3600.00, mu: 0.00006, sigma: 0.011 },
-  { symbol: 'HDFCBANK',   name: 'HDFC Bank Ltd',         initial_price: 1480.00, mu: 0.00004, sigma: 0.010 },
-  { symbol: 'INFY',       name: 'Infosys Ltd',           initial_price: 1420.00, mu: 0.00005, sigma: 0.014 },
-  { symbol: 'ICICIBANK',  name: 'ICICI Bank Ltd',        initial_price: 950.00,  mu: 0.00006, sigma: 0.012 },
-  { symbol: 'BHARTIARTL', name: 'Bharti Airtel Ltd',     initial_price: 1120.00, mu: 0.00007, sigma: 0.015 },
-  { symbol: 'ADANIENT',   name: 'Adani Enterprises Ltd', initial_price: 2500.00, mu: 0.00008, sigma: 0.025 },
-  { symbol: 'TATAMOTORS', name: 'Tata Motors Ltd',       initial_price: 1000.00, mu: 0.00006, sigma: 0.018 },
+  { symbol: 'RELIANCE', name: 'Reliance Industries', initial_price: 3000.00, mu: 0.00005, sigma: 0.012 },
+  { symbol: 'TCS', name: 'Tata Consultancy Svc', initial_price: 4000.00, mu: 0.00006, sigma: 0.011 },
+  { symbol: 'HDFCBANK', name: 'HDFC Bank Ltd', initial_price: 1480.00, mu: 0.00004, sigma: 0.010 },
+  { symbol: 'INFY', name: 'Infosys Ltd', initial_price: 1500.00, mu: 0.00005, sigma: 0.014 },
+  { symbol: 'ICICIBANK', name: 'ICICI Bank Ltd', initial_price: 950.00, mu: 0.00006, sigma: 0.012 },
+  { symbol: 'BHARTIARTL', name: 'Bharti Airtel Ltd', initial_price: 1120.00, mu: 0.00007, sigma: 0.015 },
+  { symbol: 'ADANIENT', name: 'Adani Enterprises Ltd', initial_price: 2500.00, mu: 0.00008, sigma: 0.025 },
+  { symbol: 'TATAMOTORS', name: 'Tata Motors Ltd', initial_price: 1000.00, mu: 0.00006, sigma: 0.018 },
 ];
 
 // Live-like prices that drift over time

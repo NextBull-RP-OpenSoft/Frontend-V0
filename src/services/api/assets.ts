@@ -6,19 +6,12 @@ import * as dummy from '../dummyData';
 // The backend runs crypto (BTC/ETH/SOL). This layer intercepts that and
 // returns our stock-market dummy data instead so the frontend always shows stocks.
 
-const STOCK_SYMBOLS = new Set(['AAPL', 'MSFT', 'NVDA', 'TSLA', 'AMZN', 'GOOGL']);
-
-function isCryptoResponse(data: any): boolean {
-  if (!Array.isArray(data) || data.length === 0) return false;
-  const cryptoSymbols = new Set(['BTC', 'ETH', 'SOL', 'DOGE', 'BNB', 'XRP']);
-  return data.some((a: any) => cryptoSymbols.has(a.symbol));
-}
+const STOCK_SYMBOLS = new Set(['RELIANCE', 'TCS', 'INFY', 'HDFCBANK', 'ICICIBANK', 'BHARTIARTL', 'ADANIENT', 'TATAMOTORS']);
 
 export async function getAssets(): Promise<any> {
   try {
     const data = await apiFetch('/api/v1/assets');
-    // If backend returns crypto symbols, use our stock dummies
-    if (isCryptoResponse(data)) return dummy.getAssets();
+    if (!data || (Array.isArray(data) && data.length === 0)) return dummy.getAssets();
     return data;
   } catch {
     return dummy.getAssets();
