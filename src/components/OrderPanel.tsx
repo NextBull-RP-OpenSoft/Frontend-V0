@@ -99,10 +99,13 @@ export default function OrderPanel({ symbol, currentPrice, onSubmitOrder, cashBa
               <span className="op-live-dot" />
             </div>
           )}
-          {isOrderActive && (
+          {(isOrderActive || onClose) && (
             <button 
               className="op-close-btn"
-              onClick={() => setIsOrderActive(false)}
+              onClick={() => {
+                if (onClose) onClose();
+                else setIsOrderActive(false);
+              }}
               aria-label="Close Order Panel"
               style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex' }}
             >
