@@ -64,13 +64,18 @@ function PortfolioAnalysisChart() {
     return `M ${toX(0)},${toY(arr[0])} L ${pts} L ${toX(n-1)},${PAD.t + chartH} L ${toX(0)},${PAD.t + chartH} Z`;
   };
 
-  // Current hover values
-  const idx       = hoverIdx ?? n - 1;
-  const curVal    = current[idx]  ?? current[n - 1];
-  const invVal    = invested[idx] ?? invested[n - 1];
+  // Main stats (always latest)
+  const curVal    = current[n - 1];
+  const invVal    = invested[n - 1];
   const pnlVal    = curVal - invVal;
   const pnlPct    = invVal > 0 ? (pnlVal / invVal) * 100 : 0;
   const isPos     = pnlVal >= 0;
+
+  // Hover current values (for tooltip only)
+  const hIdx      = hoverIdx ?? n - 1;
+  const hCur      = current[hIdx];
+  const hInv      = invested[hIdx];
+
 
   // Hover x line
   const hoverX    = hoverIdx !== null ? toX(hoverIdx) : null;
@@ -159,10 +164,11 @@ function PortfolioAnalysisChart() {
                 x1={hoverX} y1={PAD.t} x2={hoverX} y2={PAD.t + chartH}
                 stroke="#6366f1" strokeWidth="1" strokeDasharray="4 3" opacity="0.5"
               />
-              <circle cx={hoverX} cy={toY(curVal)}  r={4} fill="#6366f1" stroke="#fff" strokeWidth="1.5" />
-              <circle cx={hoverX} cy={toY(invVal)}  r={3} fill="#94a3b8" stroke="#fff" strokeWidth="1.5" />
+              <circle cx={hoverX} cy={toY(hCur)} r={4} fill="#6366f1" stroke="#fff" strokeWidth="1.5" />
+              <circle cx={hoverX} cy={toY(hInv)} r={3} fill="#94a3b8" stroke="#fff" strokeWidth="1.5" />
             </>
           )}
+
         </svg>
       </div>
 
@@ -567,212 +573,206 @@ export default function PortfolioPage() {
       />
 
       <div className="pf-main-grid">
-
-        {/* ── LEFT COLUMN ─────────────────────────────────── */}
-        <div className="pf-left-col">
-
-          {/* Holdings / Assets Overview */}
-          <div className="pf-card pf-assets-overview">
-            <div className="pf-card-header">
-              <span className="pf-card-title">Holdings</span>
-              <span className="pf-holdings-count">{DUMMY_HOLDINGS.length} Stocks</span>
-            </div>
-            <div className="pf-table-wrap">
-              <table className="pf-table">
-                <thead>
-                  <tr>
-                    <th>STOCK</th>
-                    <th>LTP</th>
-                    <th>AVG COST</th>
-                    <th>INVESTED</th>
-                    <th>7D TREND</th>
-                    <th>CURRENT VALUE</th>
-                    <th>P&amp;L</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {DUMMY_HOLDINGS.map(h => {
-                    const isPos = h.pnl >= 0;
-                    const color = ASSET_COLORS[h.asset_symbol] || '#3b82f6';
-                    const isHovered = hoveredHolding === h.asset_symbol;
-                    const isDimmed  = hoveredHolding !== null && !isHovered;
-                    return (
-                      <tr
-                        key={h.asset_symbol}
-                        className={`pf-table-row ${isHovered ? 'pf-row-active' : ''}`}
-                        style={{
-                          '--row-color': color,
-                          opacity: isDimmed ? 0.25 : 1,
-                          transition: 'opacity 0.2s ease',
-                          cursor: 'pointer',
-                        } as React.CSSProperties}
-                        onMouseEnter={() => setHoveredHolding(h.asset_symbol)}
-                        onMouseLeave={() => setHoveredHolding(null)}
-                      >
-                        <td>
-                          <div className="pf-asset-cell">
-                            <div
-                              className="pf-asset-icon"
-                              style={{
-                                background: color,
-                                transform: isHovered ? 'scale(1.25)' : 'scale(1)',
-                                transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-                                boxShadow: isHovered ? `0 0 16px ${color}cc, 0 0 6px ${color}88` : '0 2px 8px rgba(0,0,0,0.4)',
-                              }}
-                            >
-                              {ASSET_ICONS[h.asset_symbol] || h.asset_symbol[0]}
-                            </div>
-                            <div className="pf-asset-info">
-                              <span
-                                className="pf-asset-name"
-                                style={{
-                                  color: isHovered ? color : undefined,
-                                  fontWeight: isHovered ? 700 : undefined,
-                                  textShadow: isHovered ? `0 0 12px ${color}66` : undefined,
-                                  transition: 'color 0.2s ease, text-shadow 0.2s ease',
-                                }}
-                              >{h.asset_symbol}</span>
-                              <span className="pf-asset-symbol">{h.exchange} · {h.quantity} shares</span>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="mono pf-td-num">
-                          {inr(h.mkt_price)}
-                        </td>
-                        <td className="mono pf-td-num">
-                          {inr(h.avg_cost_basis)}
-                        </td>
-                        <td className="mono pf-td-num">
-                          {inr(h.invested, 0)}
-                        </td>
-                        <td className="pf-td-spark">
-                          <Sparkline data={h.trend} positive={isPos} />
-                        </td>
-                        <td className="mono pf-td-num">
-                          {inr(h.market_value)}
-                        </td>
-                        <td>
-                          <div className={`pf-pnl-cell ${isPos ? 'pnl-pos' : 'pnl-neg'}`}>
-                            <span className="mono">
-                              {isPos ? '+' : '-'}{inr(Math.abs(h.pnl))}
-                            </span>
-                            <span className="pf-pnl-pct mono">
-                              {isPos ? '+' : ''}{h.pnl_pct.toFixed(2)}%
-                            </span>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+        {/* Holdings */}
+        <div className="pf-card pf-assets-overview" style={{ gridColumn: 'span 9' }}>
+          <div className="pf-card-header">
+            <span className="pf-card-title">Holdings</span>
+            <span className="pf-holdings-count">{DUMMY_HOLDINGS.length} Stocks</span>
           </div>
-
-          {/* Live Chart — no gap below holdings */}
-          <div className="pf-card pf-chart-section">
-            <div className="pf-chart-header">
-              <div className="pf-chart-left">
-                <div className="pf-symbol-sel">
-                  {NSE_CHART_STOCKS.map(sym => (
-                    <button
-                      key={sym}
-                      className={`pf-sym-btn ${chartSymbol === sym ? 'active' : ''}`}
-                      onClick={() => setChartSymbol(sym)}
-                      id={`pf-sym-${sym.toLowerCase()}`}
+          <div className="pf-table-wrap">
+            <table className="pf-table">
+              <thead>
+                <tr>
+                  <th>STOCK</th>
+                  <th>LTP</th>
+                  <th>AVG COST</th>
+                  <th>INVESTED</th>
+                  <th>7D TREND</th>
+                  <th>CURRENT VALUE</th>
+                  <th>P&amp;L</th>
+                </tr>
+              </thead>
+              <tbody>
+                {DUMMY_HOLDINGS.map(h => {
+                  const isPos = h.pnl >= 0;
+                  const color = ASSET_COLORS[h.asset_symbol] || '#3b82f6';
+                  const isHovered = hoveredHolding === h.asset_symbol;
+                  const isDimmed  = hoveredHolding !== null && !isHovered;
+                  return (
+                    <tr
+                      key={h.asset_symbol}
+                      className={`pf-table-row ${isHovered ? 'pf-row-active' : ''}`}
+                      style={{
+                        '--row-color': color,
+                        opacity: isDimmed ? 0.25 : 1,
+                        transition: 'opacity 0.2s ease',
+                        cursor: 'pointer',
+                      } as React.CSSProperties}
+                      onMouseEnter={() => setHoveredHolding(h.asset_symbol)}
+                      onMouseLeave={() => setHoveredHolding(null)}
                     >
-                      {sym}
-                    </button>
-                  ))}
-                </div>
-                <span className="pf-live-badge">NSE Live</span>
+                      <td>
+                        <div className="pf-asset-cell">
+                          <div
+                            className="pf-asset-icon"
+                            style={{
+                              background: color,
+                              transform: isHovered ? 'scale(1.25)' : 'scale(1)',
+                              transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                              boxShadow: isHovered ? `0 0 16px ${color}cc, 0 0 6px ${color}88` : '0 2px 8px rgba(0,0,0,0.4)',
+                            }}
+                          >
+                            {ASSET_ICONS[h.asset_symbol] || h.asset_symbol[0]}
+                          </div>
+                          <div className="pf-asset-info">
+                            <span
+                              className="pf-asset-name"
+                              style={{
+                                color: isHovered ? color : undefined,
+                                fontWeight: isHovered ? 700 : undefined,
+                                textShadow: isHovered ? `0 0 12px ${color}66` : undefined,
+                                transition: 'color 0.2s ease, text-shadow 0.2s ease',
+                              }}
+                            >{h.asset_symbol}</span>
+                            <span className="pf-asset-symbol">{h.exchange} · {h.quantity} shares</span>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="mono pf-td-num">
+                        {inr(h.mkt_price)}
+                      </td>
+                      <td className="mono pf-td-num">
+                        {inr(h.avg_cost_basis)}
+                      </td>
+                      <td className="mono pf-td-num">
+                        {inr(h.invested, 0)}
+                      </td>
+                      <td className="pf-td-spark">
+                        <Sparkline data={h.trend} positive={isPos} />
+                      </td>
+                      <td className="mono pf-td-num">
+                        {inr(h.market_value)}
+                      </td>
+                      <td>
+                        <div className={`pf-pnl-cell ${isPos ? 'pnl-pos' : 'pnl-neg'}`}>
+                          <span className="mono">
+                            {isPos ? '+' : '-'}{inr(Math.abs(h.pnl))}
+                          </span>
+                          <span className="pf-pnl-pct mono">
+                            {isPos ? '+' : ''}{h.pnl_pct.toFixed(2)}%
+                          </span>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Sector Allocation */}
+        <div className="pf-card pf-sector" style={{ gridColumn: 'span 3' }}>
+          <span className="pf-card-title">Sector Allocation</span>
+          <div className="pf-donut-wrap">
+            <DonutChart segments={SECTORS} hoveredIdx={hoveredSector} onHover={setHoveredSector} />
+          </div>
+          <div className="pf-sector-legend">
+            {SECTORS.map((s, i) => (
+              <div
+                key={s.label}
+                className="pf-legend-row"
+                style={{
+                  opacity: hoveredSector === null ? 1 : hoveredSector === i ? 1 : 0.35,
+                  transition: 'opacity 0.2s ease',
+                  cursor: 'pointer',
+                }}
+                onMouseEnter={() => setHoveredSector(i)}
+                onMouseLeave={() => setHoveredSector(null)}
+              >
+                <span
+                  className="pf-legend-dot"
+                  style={{
+                    background: s.color,
+                    transform: hoveredSector === i ? 'scale(1.4)' : 'scale(1)',
+                    transition: 'transform 0.2s ease',
+                  }}
+                />
+                <span
+                  className="pf-legend-label"
+                  style={{ color: hoveredSector === i ? s.color : undefined, fontWeight: hoveredSector === i ? 600 : undefined }}
+                >{s.label}</span>
+                <span className="pf-legend-pct mono" style={{ color: hoveredSector === i ? s.color : undefined }}>{s.value}%</span>
               </div>
-              <div className="pf-time-ranges">
-                {TIME_RANGES.map(r => (
+            ))}
+          </div>
+        </div>
+
+        {/* Live Chart */}
+        <div className="pf-card pf-chart-section" style={{ gridColumn: 'span 9' }}>
+          <div className="pf-chart-header">
+            <div className="pf-chart-left">
+              <div className="pf-symbol-sel">
+                {NSE_CHART_STOCKS.map(sym => (
                   <button
-                    key={r}
-                    className={`pf-range-btn ${selectedRange === r ? 'active' : ''}`}
-                    onClick={() => setSelectedRange(r)}
-                    id={`pf-range-${r.toLowerCase()}`}
-                  >{r}</button>
+                    key={sym}
+                    className={`pf-sym-btn ${chartSymbol === sym ? 'active' : ''}`}
+                    onClick={() => setChartSymbol(sym)}
+                    id={`pf-sym-${sym.toLowerCase()}`}
+                  >
+                    {sym}
+                  </button>
                 ))}
               </div>
+              <span className="pf-live-badge">NSE Live</span>
             </div>
-
-            <div className="pf-price-row">
-              <div>
-                <div className="pf-stock-full-name">{chartStockName}</div>
-                <span className="pf-chart-price mono">
-                  {currentPrice > 0 ? inr(currentPrice) : inr(DUMMY_HOLDINGS.find(h => h.asset_symbol === chartSymbol)?.mkt_price || 0)}
-                  <span className="pf-price-unit"> NSE</span>
-                </span>
-              </div>
-              <span className={`pf-price-chg ${isChartPositive ? 'pos' : 'neg'}`}>
-                {inr(priceChange.abs)} ({priceChange.pct.toFixed(2)}%)
-              </span>
-            </div>
-
-            <div className="pf-chart-body">
-              <CandlestickChart
-                candles={candles}
-                interval={candleInterval}
-                onIntervalChange={setCandleInterval}
-                symbol={chartSymbol}
-              />
-            </div>
-          </div>
-
-        </div>{/* end pf-left-col */}
-
-        {/* ── RIGHT COLUMN ───────────────────────────────── */}
-        <div className="pf-right-col">
-
-
-
-          {/* Sector Allocation */}
-          <div className="pf-card pf-sector">
-            <span className="pf-card-title">Sector Allocation</span>
-            <div className="pf-donut-wrap">
-              <DonutChart segments={SECTORS} hoveredIdx={hoveredSector} onHover={setHoveredSector} />
-            </div>
-            <div className="pf-sector-legend">
-              {SECTORS.map((s, i) => (
-                <div
-                  key={s.label}
-                  className="pf-legend-row"
-                  style={{
-                    opacity: hoveredSector === null ? 1 : hoveredSector === i ? 1 : 0.35,
-                    transition: 'opacity 0.2s ease',
-                    cursor: 'pointer',
-                  }}
-                  onMouseEnter={() => setHoveredSector(i)}
-                  onMouseLeave={() => setHoveredSector(null)}
-                >
-                  <span
-                    className="pf-legend-dot"
-                    style={{
-                      background: s.color,
-                      transform: hoveredSector === i ? 'scale(1.4)' : 'scale(1)',
-                      transition: 'transform 0.2s ease',
-                    }}
-                  />
-                  <span
-                    className="pf-legend-label"
-                    style={{ color: hoveredSector === i ? s.color : undefined, fontWeight: hoveredSector === i ? 600 : undefined }}
-                  >{s.label}</span>
-                  <span className="pf-legend-pct mono" style={{ color: hoveredSector === i ? s.color : undefined }}>{s.value}%</span>
-                </div>
+            <div className="pf-time-ranges">
+              {TIME_RANGES.map(r => (
+                <button
+                  key={r}
+                  className={`pf-range-btn ${selectedRange === r ? 'active' : ''}`}
+                  onClick={() => setSelectedRange(r)}
+                  id={`pf-range-${r.toLowerCase()}`}
+                >{r}</button>
               ))}
             </div>
           </div>
 
-        </div>{/* end pf-right-col */}
+          <div className="pf-price-row">
+            <div>
+              <div className="pf-stock-full-name">{chartStockName}</div>
+              <span className="pf-chart-price mono">
+                {currentPrice > 0 ? inr(currentPrice) : inr(DUMMY_HOLDINGS.find(h => h.asset_symbol === chartSymbol)?.mkt_price || 0)}
+                <span className="pf-price-unit"> NSE</span>
+              </span>
+            </div>
+            <span className={`pf-price-chg ${isChartPositive ? 'pos' : 'neg'}`}>
+              {inr(priceChange.abs)} ({priceChange.pct.toFixed(2)}%)
+            </span>
+          </div>
+
+          <div className="pf-chart-body">
+            <CandlestickChart
+              candles={candles}
+              interval={candleInterval}
+              onIntervalChange={setCandleInterval}
+              symbol={chartSymbol}
+              isFullscreen={false}
+              onToggleFullscreen={() => {}}
+              extraControls={<></>}
+            />
+          </div>
+        </div>
+
+        {/* Analysis */}
+        <div style={{ gridColumn: 'span 3' }}>
+          <PortfolioAnalysisChart />
+        </div>
 
       </div>{/* end pf-main-grid */}
 
-      {/* ── Portfolio Analysis ────────────────────────── */}
-      <PortfolioAnalysisChart />
 
     </div>
   );
 }
+

@@ -7,3 +7,7 @@ export * from './trades';
 export * from './portfolio';
 export * from './bots';
 export * from './admin';
+export * from './news';
+
+
+

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+
 import { useMarket } from '../context/MarketContext';
 import * as api from '../services/api';
 import * as ws from '../services/websocket';
@@ -8,10 +9,13 @@ import CandlestickChart from '../components/CandlestickChart';
 import OrderBook from '../components/OrderBook';
 import OrderPanel from '../components/OrderPanel';
 import TradeHistory from '../components/TradeHistory';
+import NewsSection from '../components/NewsSection';
 import './DashboardPage.css';
 
+
 export default function DashboardPage() {
-  const { selectedSymbol, setMarketStats, isOrderActive, setIsOrderActive } = useMarket();
+  const { selectedSymbol, setSelectedSymbol, setMarketStats, isOrderActive, setIsOrderActive } = useMarket();
+
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showOrderPanel, setShowOrderPanel] = useState(false);
   const [candles, setCandles] = useState([]);
@@ -24,6 +28,7 @@ export default function DashboardPage() {
   const [currentPrice, setCurrentPrice] = useState(0);
 
   const selectedSymbolRef = useRef(selectedSymbol);
+
   selectedSymbolRef.current = selectedSymbol;
   const candleIntervalRef = useRef(candleInterval);
   candleIntervalRef.current = candleInterval;
@@ -59,6 +64,8 @@ export default function DashboardPage() {
       console.error('Failed to load dashboard data:', err);
     }
   }, [selectedSymbol, candleInterval]);
+
+
 
   useEffect(() => {
     if (!selectedSymbol) return;
@@ -206,6 +213,10 @@ export default function DashboardPage() {
           <TradeHistory trades={trades} symbol={selectedSymbol} />
         </div>
 
+        <div className="dashboard-news">
+          <NewsSection stock={selectedSymbol} />
+        </div>
+
         <div className="dashboard-order-panel">
           <OrderPanel
             symbol={selectedSymbol}
@@ -215,6 +226,7 @@ export default function DashboardPage() {
             onClose={() => setIsOrderActive(false)}
           />
         </div>
+
 
 
       </div>

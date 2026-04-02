@@ -85,6 +85,7 @@ export default function CandlestickChart({ candles, interval, onIntervalChange, 
   }, []);
 
   const formatPrice = (p) => {
+    if (typeof p !== 'number') return '₹0.00';
     return '₹' + p.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 

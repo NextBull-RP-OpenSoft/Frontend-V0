@@ -2,6 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { BarChart2, RefreshCw, Info, Clock, X } from 'lucide-react';
+
+
+
 import * as api from '../services/api';
 import { useMarket } from '../context/MarketContext';
 import './OrdersPage.css';
@@ -128,9 +131,14 @@ export default function OrdersPage() {
                     </td>
                     <td>
                       <div className="action-tabs">
-                        <button className="action-tab-btn" title="Chart">
+                        <button 
+                          className="action-tab-btn" 
+                          title="Chart" 
+                        >
                           <BarChart2 size={14} />
                         </button>
+
+
                         <button className="action-tab-btn active" title="Modify/Repeat">
                           <RefreshCw size={14} />
                         </button>

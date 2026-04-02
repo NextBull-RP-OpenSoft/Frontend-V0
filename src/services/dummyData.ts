@@ -301,3 +301,33 @@ export function generateLiveTrade(symbol: string) {
     symbol,
   };
 }
+
+// ---------- NEWS ----------
+const MOCK_NEWS: Record<string, any[]> = {
+  'RELIANCE': [
+    { title: "Reliance Industries to Expand Green Energy Portfolio", source: "The Economic Times", time: "2h ago", url: "#", description: "RIL announces new multi-billion dollar investment in solar and hydrogen energy sectors." },
+    { title: "Jio Reports Strong Quarterly Growth in User Base", source: "Moneycontrol", time: "5h ago", url: "#", description: "Reliance Jio adds 5 million new subscribers as 5G rollout accelerates across India." },
+    { title: "Reliance Retail Gains Market Share in Fashion Segment", source: "Business Standard", time: "1d ago", url: "#", description: "New brand partnerships and store expansions drive double-digit growth for the retail arm." }
+  ],
+  'TCS': [
+    { title: "TCS Secures Large Multi-Year Cloud Transformation Deal", source: "Business Line", time: "3h ago", url: "#", description: "The IT giant wins a strategic contract from a major European financial institution." },
+    { title: "TCS to Implement AI-Driven Solutions for Global Retailer", source: "Mint", time: "6h ago", url: "#", description: "Leveraging generative AI to optimize supply chain and customer experience." }
+  ],
+  'HDFCBANK': [
+    { title: "HDFC Bank Reports 20% Jump in Net Profit", source: "CNBC TV18", time: "4h ago", url: "#", description: "Strong loan growth and improved asset quality drive robust quarterly performance." },
+    { title: "HDFC Bank Expands Rural Branch Network", source: "Financial Express", time: "8h ago", url: "#", description: "Focus on financial inclusion results in 500 new branches across semi-urban areas." }
+  ],
+  'INFY': [
+    { title: "Infosys Signs Strategic Partnership with Global Tech Leader", source: "TechCrunch", time: "1h ago", url: "#", description: "Collaboration focuses on scaling digital transformation and hybrid cloud solutions." }
+  ],
+  'ICICIBANK': [
+    { title: "ICICI Bank's Digital Transactions Hit Record High", source: "Daily News", time: "7h ago", url: "#", description: "Mobile app usage surges by 35% as customers shift to digital-first banking." }
+  ]
+};
+
+export function getNews(symbol: string) {
+  return MOCK_NEWS[symbol] || [
+    { title: `${symbol} Stock Shows Steady Performance in Mid-Day Trade`, source: "Market Watch", time: "3h ago", url: "#", description: "Investors maintain cautious optimism as market volatility remains low." },
+    { title: "Recent Analysts' Ratings for Stock in This Sector", source: "Finance Today", time: "9h ago", url: "#", description: "Multiple brokerage firms update their target prices for key players in the industry." }
+  ];
+}
