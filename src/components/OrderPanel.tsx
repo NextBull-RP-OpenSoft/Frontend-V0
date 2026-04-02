@@ -39,7 +39,6 @@ export default function OrderPanel({ symbol, currentPrice, onSubmitOrder, cashBa
 
   const handleSideChange = (s: string) => {
     setSide(s);
-    setIsOrderActive(true);
   };
 
   const handleTypeChange = (t: string) => {

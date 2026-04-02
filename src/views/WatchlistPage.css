@@ -590,6 +590,9 @@
     justify-content: center;
     z-index: 1000;
     padding: var(--space-md);
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    backface-visibility: hidden;
 }
 
 .modal-content {

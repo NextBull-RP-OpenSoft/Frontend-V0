@@ -20,16 +20,7 @@ export function MarketProvider({ children }) {
   const [isOrderActive, setIsOrderActiveState] = useState(false);
 
   const setIsOrderActive = useCallback((active: boolean | ((prev: boolean) => boolean)) => {
-    if (typeof document !== 'undefined' && 'startViewTransition' in document) {
-      // @ts-ignore - startViewTransition might not be fully typed everywhere yet
-      document.startViewTransition(() => {
-        flushSync(() => {
-          setIsOrderActiveState(active);
-        });
-      });
-    } else {
-      setIsOrderActiveState(active);
-    }
+    setIsOrderActiveState(active);
   }, []);
 
   useEffect(() => {
