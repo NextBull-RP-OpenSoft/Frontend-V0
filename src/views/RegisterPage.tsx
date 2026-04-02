@@ -24,6 +24,10 @@ export default function RegisterPage() {
       setError('Please fill in all fields');
       return;
     }
+    if (!email.match((/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/))) {
+      setError('Invalid email id');
+      return;
+    }
     if (password !== confirmPassword) {
       setError('Passwords do not match');
       return;
