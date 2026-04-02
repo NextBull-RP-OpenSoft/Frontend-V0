@@ -197,22 +197,7 @@
 }
 
 .order-panel-wrapper {
-    width: 0;
-    opacity: 0;
-    overflow: hidden;
-    transform: translateX(30px);
-    transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1), 
-                opacity 0.3s ease-out, 
-                transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
-                margin-left 0.4s ease;
-    flex-shrink: 0;
-}
-
-.order-panel-wrapper.open {
-    width: 350px;
-    opacity: 1;
-    transform: translateX(0);
-    margin-left: var(--space-lg);
+    display: none;
 }
 
 .watchlist-container {
@@ -334,6 +319,7 @@
     align-items: center;
     gap: var(--space-md);
     min-width: 250px;
+    transition: opacity 0.1s ease-out;
 }
 
 .perf-value {
@@ -405,12 +391,15 @@
     pointer-events: all;
 }
 
+.watchlist-row:hover .perf-container {
+    opacity: 0;
+}
+
 .btn-row {
     display: flex;
     align-items: center;
     justify-content: center;
     border-radius: var(--radius-md);
-    transition: all var(--transition-fast);
     font-weight: 600;
     height: 32px;
 }
@@ -429,16 +418,18 @@
 }
 
 .btn-row.buy-sell {
-    background: var(--accent);
+    background: linear-gradient(90deg, #22c55e 51%, #ef4444 50%); /* Split gradient with slight overlap to prevent artifacts */
     color: #ffffff;
     padding: 0 12px;
     font-size: var(--text-xs);
     text-transform: uppercase;
+    border: none; /* Removed border to eliminate edge artifacts */
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    outline: none;
 }
 
 .btn-row.buy-sell:hover {
-    background: #60a5fa;
-    box-shadow: 0 0 10px var(--accent-muted);
+    filter: brightness(1.2);
 }
 
 .btn-row.remove {
@@ -449,7 +440,6 @@
 
 .btn-row.remove:hover {
     color: #f87171;
-    transform: scale(1.1);
 }
 
 .sparkline {
@@ -701,6 +691,14 @@
 .watchlist-order-panel {
     display: flex;
     flex-direction: column;
+    padding: var(--space-lg);
+}
+
+.watchlist-order-panel .card-header {
+    margin-bottom: var(--space-lg);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 .panel-company-info {
@@ -871,3 +869,133 @@
         display: none;
     }
 }
+
+@media (max-width: 768px) {
+    .watchlist-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-md);
+        margin-bottom: var(--space-xl);
+    }
+
+    .watchlist-tabs-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: var(--space-md);
+        margin-bottom: var(--space-lg);
+    }
+
+    .tabs-actions {
+        width: 100%;
+        gap: var(--space-sm);
+        flex-wrap: wrap;
+    }
+
+    .watchlist-search-container {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .btn-tab-action {
+        flex: 1;
+        justify-content: center;
+    }
+
+    /* Change 52W Perf header to ACTIONS */
+    .watchlist-table th:nth-child(6) .th-content {
+        display: none;
+    }
+    .watchlist-table th:nth-child(6)::after {
+        content: "ACTIONS";
+    }
+
+    /* Keep the last column for actions, but hide the 52W Perf bar */
+    .perf-container {
+        display: none !important;
+    }
+
+    .row-actions {
+        opacity: 1 !important;
+        pointer-events: all !important;
+        position: relative !important;
+        top: 0 !important;
+        right: 0 !important;
+        transform: none !important;
+        display: flex !important;
+        justify-content: flex-end;
+        width: auto;
+        background: transparent;
+        gap: 4px;
+    }
+
+    .perf-actions-container {
+        justify-content: flex-end;
+    }
+
+    .watchlist-table td, .watchlist-table th {
+        padding: 12px 16px;
+    }
+}
+
+@media (max-width: 480px) {
+    .watchlist-page {
+        padding: var(--space-md);
+    }
+
+    .watchlist-title {
+        font-size: var(--text-2xl);
+    }
+
+    .tabs-scroll-area {
+        padding-bottom: 8px;
+    }
+
+    .tab-item {
+        padding: 8px 16px;
+        font-size: var(--text-sm);
+    }
+
+    .watchlist-table th:nth-child(3),
+    .watchlist-table td:nth-child(3) {
+        display: none;
+    }
+
+    .company-cell {
+        gap: var(--space-xs);
+    }
+
+    .company-icon {
+        width: 32px;
+        height: 32px;
+        font-size: 0.8rem;
+    }
+
+    .company-symbol {
+        font-size: var(--text-xs);
+    }
+
+    .company-name {
+        display: none;
+    }
+
+    .modal-content {
+        max-width: 95% !important;
+        margin: 0 auto;
+    }
+
+    .modal-body {
+        padding: var(--space-md);
+    }
+
+    .btn-row.buy-sell {
+        padding: 0 6px;
+        font-size: 9px;
+    }
+
+    .btn-row.terminal, .btn-row.remove {
+        width: 28px;
+        height: 28px;
+    }
+}
+
+
