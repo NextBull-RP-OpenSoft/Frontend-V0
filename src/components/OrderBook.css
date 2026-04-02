@@ -103,7 +103,7 @@
 .spread-price {
   font-size: var(--text-base);
   font-weight: 700;
-  color: var(--accent-teal);
+  color: var(--accent);
 }
 
 .spread-label {

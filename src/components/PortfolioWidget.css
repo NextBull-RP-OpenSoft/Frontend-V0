@@ -72,7 +72,7 @@
 }
 
 .portfolio-hero {
-  background: linear-gradient(135deg, var(--bg-card) 0%, rgba(0, 212, 170, 0.03) 50%, rgba(224, 64, 251, 0.03) 100%);
+  background: var(--bg-card);
 }
 
 .hero-top {
@@ -102,6 +102,9 @@
   font-weight: 700;
   padding: 6px 14px;
   border-radius: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .hero-badge.positive {
@@ -140,12 +143,12 @@
 }
 
 .holdings-section {
-  animation: fadeIn 0.4s ease;
+  animation: fadeIn 0.3s ease;
 }
 
 .holding-symbol {
   font-weight: 700;
-  color: var(--accent-teal);
+  color: var(--accent);
 }
 
 .holding-pnl-pct {
