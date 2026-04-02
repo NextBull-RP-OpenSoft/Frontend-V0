@@ -11,14 +11,7 @@
   position: relative;
 }
 
-/* ── Accent border top based on side ── */
-.op-buy {
-  border-top: 2px solid var(--color-buy);
-}
 
-.op-sell {
-  border-top: 2px solid var(--color-sell);
-}
 
 /* ================================================
    HEADER
@@ -95,7 +88,7 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--bg-input);
   border-radius: var(--radius-md);
   padding: 4px;
   margin: 0 16px;
