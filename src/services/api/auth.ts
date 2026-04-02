@@ -18,9 +18,3 @@ export async function refreshToken(refresh_token: string): Promise<any> {
   return refreshToken_(refresh_token);
 }
 
-export async function loginWithGoogle(credential: string): Promise<any> {
-  return apiFetch('/api/v1/auth/google', {
-    method: 'POST',
-    body: JSON.stringify({ credential }),
-  });
-}

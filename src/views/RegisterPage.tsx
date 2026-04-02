@@ -4,7 +4,6 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
-import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 import BullLogo from '../components/BullLogo';
 import './LoginPage.css';
 
@@ -15,7 +14,7 @@ export default function RegisterPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { register, login, loginWithGoogle } = useAuth();
+  const { register, login } = useAuth();
   const router = useRouter();
 
   const handleSubmit = async (e) => {
@@ -48,20 +47,7 @@ export default function RegisterPage() {
     setLoading(false);
   };
 
-  const handleGoogleSuccess = async (credentialResponse: any) => {
-    try {
-      setLoading(true);
-      setError('');
-      await loginWithGoogle(credentialResponse.credential);
-      router.push('/dashboard');
-    } catch (err) {
-      setError('Google registration failed. Please try again.');
-      setLoading(false);
-    }
-  };
-
   return (
-    <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || 'YOUR_GOOGLE_CLIENT_ID'}>
     <div className="auth-split-layout" id="register-page">
       {/* Decorative Left Side */}
       <div className="auth-decorative-side">
@@ -249,20 +235,8 @@ export default function RegisterPage() {
             </p>
           </form>
 
-          <div className="auth-or-divider">
-            <span>OR</span>
-          </div>
-
-          <div className="auth-google-btn">
-            <GoogleLogin
-              onSuccess={handleGoogleSuccess}
-              onError={() => setError('Google Registration Failed')}
-              text="signup_with"
-            />
-          </div>
         </div>
       </div>
     </div>
-    </GoogleOAuthProvider>
   );
 }

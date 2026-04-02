@@ -4,7 +4,6 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
-import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 import BullLogo from '../components/BullLogo';
 import './LoginPage.css';
 
@@ -13,7 +12,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login, loginWithGoogle } = useAuth();
+  const { login } = useAuth();
   const router = useRouter();
 
   const handleSubmit = async (e) => {
@@ -33,20 +32,7 @@ export default function LoginPage() {
     setLoading(false);
   };
 
-  const handleGoogleSuccess = async (credentialResponse: any) => {
-    try {
-      setLoading(true);
-      setError('');
-      await loginWithGoogle(credentialResponse.credential);
-      router.push('/dashboard');
-    } catch (err) {
-      setError('Google login failed. Please try again.');
-      setLoading(false);
-    }
-  };
-
   return (
-    <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || 'YOUR_GOOGLE_CLIENT_ID'}>
       <div className="auth-split-layout" id="login-page">
       {/* Decorative Left Side */}
       <div className="auth-decorative-side">
@@ -212,19 +198,8 @@ export default function LoginPage() {
             </p>
           </form>
 
-          <div className="auth-or-divider">
-            <span>OR</span>
-          </div>
-
-          <div className="auth-google-btn">
-            <GoogleLogin
-              onSuccess={handleGoogleSuccess}
-              onError={() => setError('Google Login Failed')}
-            />
-          </div>
         </div>
       </div>
     </div>
-    </GoogleOAuthProvider>
   );
 }
