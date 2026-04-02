@@ -5,7 +5,7 @@ import { AlertCircle, CheckCircle2, Info, TrendingUp, TrendingDown, Zap, X } fro
 import { useMarket } from '../context/MarketContext';
 import './OrderPanel.css';
 
-export default function OrderPanel({ symbol, currentPrice, onSubmitOrder, cashBalance }) {
+export default function OrderPanel({ symbol, currentPrice, onSubmitOrder, cashBalance, onClose }: { symbol?: string, currentPrice?: number, onSubmitOrder: any, cashBalance?: number, onClose?: () => void } | any) {
   const { selectedSymbol, isOrderActive, setIsOrderActive } = useMarket();
   const activeSymbol = symbol || selectedSymbol;
 
@@ -99,10 +99,13 @@ export default function OrderPanel({ symbol, currentPrice, onSubmitOrder, cashBa
               <span className="op-live-dot" />
             </div>
           )}
-          {isOrderActive && (
+          {(isOrderActive || onClose) && (
             <button 
               className="op-close-btn"
-              onClick={() => setIsOrderActive(false)}
+              onClick={() => {
+                if (onClose) onClose();
+                else setIsOrderActive(false);
+              }}
               aria-label="Close Order Panel"
               style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex' }}
             >

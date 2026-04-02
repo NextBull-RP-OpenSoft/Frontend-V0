@@ -9,13 +9,12 @@ import './CandlestickChart.css';
 
 const INTERVALS = ['1s', '5s', '1m', '5m'];
 
-export default function CandlestickChart({ candles, interval, onIntervalChange, symbol }) {
+export default function CandlestickChart({ candles, interval, onIntervalChange, symbol, isFullscreen, onToggleFullscreen, extraControls }) {
   const containerRef = useRef(null);
   const engineRef = useRef(null);
   const [tooltipData, setTooltipData] = useState(null);
   const [showSMA, setShowSMA] = useState(true);
   const [showEMA, setShowEMA] = useState(true);
-  const [isFullscreen, setIsFullscreen] = useState(false);
   const { assets, symbolLoading } = useMarket();
 
   // Get company name for subtitle
@@ -26,26 +25,8 @@ export default function CandlestickChart({ candles, interval, onIntervalChange, 
     setTooltipData(data);
   }, []);
 
-  // Fullscreen effect
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape' && isFullscreen) {
-        setIsFullscreen(false);
-      }
-    };
-    if (isFullscreen) {
-      window.addEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'auto';
-    }
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = 'auto';
-    };
-  }, [isFullscreen]);
-
-  // Handle resize on fullscreen toggle
+  // Fullscreen effect logic moved to parent DashboardPage, 
+  // but we still want resize event when it toggles.
   useEffect(() => {
     if (engineRef.current) {
       setTimeout(() => engineRef.current.resize(), 50);
@@ -126,7 +107,7 @@ export default function CandlestickChart({ candles, interval, onIntervalChange, 
   const isUp = tooltipCandle ? tooltipCandle.close >= tooltipCandle.open : true;
 
   return (
-    <div className={`chart-container card ${isFullscreen ? 'fullscreen-mode' : ''}`} id="candlestick-chart">
+    <div className={`chart-container card`} id="candlestick-chart">
       <div className="chart-header">
         <div className="chart-title">
           <div className="chart-title-row">
@@ -136,6 +117,7 @@ export default function CandlestickChart({ candles, interval, onIntervalChange, 
           <span className="chart-subtitle">Candlestick · Stock Chart</span>
         </div>
         <div className="chart-controls">
+          {extraControls}
           <div className="ma-toggles">
             <label className="ma-toggle">
               <input type="checkbox" checked={showSMA} onChange={(e) => setShowSMA(e.target.checked)} />
@@ -166,7 +148,7 @@ export default function CandlestickChart({ candles, interval, onIntervalChange, 
         {!symbolLoading && (
           <button 
             className={`chart-fullscreen-btn ${isFullscreen ? 'is-fullscreen' : ''}`}
-            onClick={() => setIsFullscreen(prev => !prev)}
+            onClick={() => onToggleFullscreen && onToggleFullscreen()}
             aria-label="Toggle Fullscreen"
             title={isFullscreen ? "Exit Fullscreen (Esc)" : "Fullscreen"}
           >

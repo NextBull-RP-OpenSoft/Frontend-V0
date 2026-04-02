@@ -2,6 +2,54 @@
    PORTFOLIO PAGE  –  Nextbull Design
    ══════════════════════════════════════════════ */
 
+/* ── Page Entrance Animations ─────────────────── */
+@keyframes pf-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+    filter: blur(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+@keyframes pf-slide-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes pf-slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes pf-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Page wrapper fades in as a whole */
 .pf-page {
   padding: 20px 24px 32px;
   display: flex;
@@ -9,6 +57,41 @@
   gap: 20px;
   min-height: 100%;
   background: var(--bg-primary);
+  animation: pf-slide-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Header animates in first */
+.pf-page-header {
+  animation: pf-slide-up 0.45s 0.05s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Each stat card staggers in */
+.pf-top-stats-row .pf-top-card:nth-child(1) {
+  animation: pf-slide-up 0.45s 0.10s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.pf-top-stats-row .pf-top-card:nth-child(2) {
+  animation: pf-slide-up 0.45s 0.17s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.pf-top-stats-row .pf-top-card:nth-child(3) {
+  animation: pf-slide-up 0.45s 0.24s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.pf-top-stats-row .pf-top-card:nth-child(4) {
+  animation: pf-slide-up 0.45s 0.31s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Left column slides in from the left */
+.pf-left-col {
+  animation: pf-slide-in-left 0.55s 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Right column slides in from the right */
+.pf-right-col {
+  animation: pf-slide-in-right 0.55s 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Analysis chart scales up last */
+.pf-analysis {
+  animation: pf-scale-in 0.55s 0.50s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 
@@ -79,37 +162,7 @@
   letter-spacing: 0.02em;
 }
 
-/* Demat quick stats grid */
-.pf-demat-stats {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  margin-top: 4px;
-  padding-top: 12px;
-  border-top: 1px solid var(--border-primary);
-}
 
-.pf-demat-stat {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.pf-ds-label {
-  font-size: 10px;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  font-weight: 600;
-}
-
-.pf-ds-val {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text-primary);
-}
-
-.pf-ds-val.pnl-pos { color: var(--color-buy); }
 
 /* ── Card base ─────────────────────────────────── */
 .pf-card {
@@ -158,7 +211,6 @@
   display: flex;
   flex-direction: column;
   transition: box-shadow 0.2s ease, transform 0.2s ease;
-  border-left-width: 3px;
 }
 
 .pf-top-card:hover {
@@ -166,9 +218,7 @@
   transform: translateY(-2px);
 }
 
-.pf-tc-blue { border-left-color: #3b82f6; }
-.pf-tc-green { border-left-color: #22c55e; }
-.pf-tc-red { border-left-color: #ef4444; }
+
 
 .pf-tc-header {
   display: flex;
@@ -321,8 +371,23 @@
   border-bottom: none;
 }
 
-.pf-table-row:hover {
-  background: var(--bg-card-hover);
+/* Active (hovered) row — paint each td directly */
+.pf-row-active {
+  transform: translateX(3px);
+  transition: transform 0.2s ease !important;
+}
+
+.pf-row-active td {
+  background: color-mix(in srgb, var(--row-color, #3b82f6) 10%, transparent);
+  transition: background 0.2s ease;
+}
+
+.pf-row-active td:first-child {
+  box-shadow: inset 4px 0 0 var(--row-color, #3b82f6);
+}
+
+.pf-row-active .pf-td-num {
+  color: var(--text-primary) !important;
 }
 
 .pf-table td {
@@ -404,123 +469,7 @@
   padding: 32px 0 !important;
 }
 
-/* ── Wallet ─────────────────────────────────────── */
-.pf-wallet {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
 
-.pf-wallet-top-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.pf-wallet-meta {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.pf-wallet-updated {
-  font-size: 11px;
-  color: var(--text-muted);
-}
-
-.pf-wallet-refresh {
-  background: none;
-  border: none;
-  color: var(--text-muted);
-  font-size: 16px;
-  cursor: pointer;
-  transition: color var(--transition-fast), transform var(--transition-fast);
-  padding: 0;
-  line-height: 1;
-}
-
-.pf-wallet-refresh:hover {
-  color: var(--accent);
-  transform: rotate(180deg);
-}
-
-/* Currency buttons */
-.pf-currency-sel {
-  display: flex;
-  gap: 6px;
-}
-
-.pf-cur-btn {
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-muted);
-  background: var(--bg-elevated);
-  border: 1px solid var(--border-primary);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.pf-cur-btn.active {
-  background: var(--accent-muted);
-  color: var(--accent);
-  border-color: var(--border-accent);
-}
-
-.pf-cur-btn:hover:not(.active) {
-  color: var(--text-primary);
-}
-
-/* Balance */
-.pf-balance-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.pf-balance {
-  font-size: 1.6rem;
-  font-weight: 700;
-  color: var(--text-primary);
-  letter-spacing: -0.03em;
-  line-height: 1.1;
-}
-
-.pf-bal-badge {
-  font-size: 11px;
-  font-weight: 700;
-  padding: 3px 8px;
-  border-radius: 20px;
-}
-
-.pf-bal-badge.badge-pos {
-  background: var(--color-buy-bg);
-  color: var(--color-buy);
-}
-
-.pf-bal-badge.badge-neg {
-  background: var(--color-sell-bg);
-  color: var(--color-sell);
-}
-
-.pf-revenue-text {
-  font-size: 12px;
-  color: var(--text-muted);
-  line-height: 1.4;
-}
-
-.pf-revenue-text strong {
-  color: var(--text-secondary);
-}
-
-.pf-wallet-chart {
-  margin-top: 4px;
-  overflow: hidden;
-  border-radius: var(--radius-md);
-  opacity: 0.9;
-}
 
 /* ── Chart section ─────────────────────────────── */
 .pf-chart-section {
@@ -730,9 +679,7 @@
     border-bottom: 1px solid var(--border-primary);
   }
 
-  .pf-wallet-chart svg {
-    width: 100% !important;
-  }
+
 }
 
 @media (max-width: 640px) {

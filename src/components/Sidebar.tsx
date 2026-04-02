@@ -13,8 +13,8 @@ const NAV_ITEMS = [
   { path: '/portfolio', label: 'Portfolio', icon: Wallet },
   { path: '/orders', label: 'Orders', icon: ClipboardList },
   { path: '/bots', label: 'Bots', icon: Bot },
-  { path: '/admin', label: 'Admin', icon: Settings },
   { path: '/watchlist', label: 'Watchlist', icon: List },
+  { path: '/admin', label: 'Admin', icon: Settings },
 ];
 
 export default function Sidebar() {
