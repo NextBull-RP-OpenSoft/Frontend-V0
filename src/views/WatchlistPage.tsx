@@ -2,25 +2,25 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Plus, Edit2, X, Search, Check, BarChart2, Trash2, ArrowUpRight, ChevronUp, ChevronDown, GripVertical } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useMarket } from '../context/MarketContext';
 import OrderPanel from '../components/OrderPanel';
 import './WatchlistPage.css';
 
-// Dummy data for initial implementation
+// Dummy data aligned with Dashboard's dummyData.ts initial states
 const INITIAL_STOCKS = [
-  { symbol: 'AAPL', name: 'Apple Inc.', price: 173.50, change: 2.15, changePercent: 1.25, volume: '52.4M', volumeRaw: 52400000, low52w: 124.2, high52w: 198.2, trend: [170, 172, 171, 174, 173.5] },
-  { symbol: 'TSLA', name: 'Tesla Inc.', price: 195.43, change: -5.20, changePercent: -2.59, volume: '112.1M', volumeRaw: 112100000, low52w: 152.4, high52w: 299.3, trend: [205, 200, 198, 196, 195.43] },
-  { symbol: 'NVDA', name: 'NVIDIA Corp.', price: 885.20, change: 12.45, changePercent: 1.43, volume: '48.2M', volumeRaw: 48200000, low52w: 262.2, high52w: 974.0, trend: [860, 870, 865, 880, 885.2] },
-  { symbol: 'MSFT', name: 'Microsoft', price: 418.66, change: -1.22, changePercent: -0.29, volume: '21.8M', volumeRaw: 21800000, low52w: 309.4, high52w: 430.8, trend: [422, 420, 421, 417, 418.66] },
-  { symbol: 'AMZN', name: 'Amazon.com', price: 186.27, change: 3.12, changePercent: 1.70, volume: '42.9M', volumeRaw: 42900000, low52w: 132.9, high52w: 189.8, trend: [182, 183, 182, 187, 186.27] },
+  { symbol: 'RELIANCE', name: 'Reliance Industries', price: 2450.00, change: 12.50, changePercent: 0.51, volume: '11.5M', volumeRaw: 11500000, low52w: 2200.0, high52w: 2900.0, trend: [2400, 2420, 2410, 2440, 2450] },
+  { symbol: 'TCS', name: 'Tata Consultancy Svc', price: 3600.00, change: -15.20, changePercent: -0.42, volume: '2.1M', volumeRaw: 2100000, low52w: 3100.0, high52w: 4200.0, trend: [3620, 3610, 3605, 3615, 3600] },
+  { symbol: 'HDFCBANK', name: 'HDFC Bank Ltd', price: 1480.00, change: 8.45, changePercent: 0.57, volume: '18.2M', volumeRaw: 18200000, low52w: 1350.0, high52w: 1750.0, trend: [1460, 1470, 1465, 1475, 1480] },
+  { symbol: 'INFY', name: 'Infosys Ltd', price: 1420.00, change: -5.22, changePercent: -0.37, volume: '4.8M', volumeRaw: 4800000, low52w: 1300.0, high52w: 1650.0, trend: [1430, 1425, 1428, 1422, 1420] },
+  { symbol: 'ICICIBANK', name: 'ICICI Bank Ltd', price: 950.00, change: 11.12, changePercent: 1.18, volume: '14.9M', volumeRaw: 14900000, low52w: 800.0, high52w: 1100.0, trend: [930, 935, 940, 945, 950] },
 ];
 
 const ALL_STOCKS_POOL = [
   ...INITIAL_STOCKS,
-  { symbol: 'GOOGL', name: 'Alphabet Inc.', price: 152.12, change: 1.45, changePercent: 0.96, volume: '28.1M', volumeRaw: 28100000, low52w: 104.5, high52w: 160.2, trend: [148, 150, 151, 152.12] },
-  { symbol: 'META', name: 'Meta Platforms', price: 485.35, change: -4.12, changePercent: -0.84, volume: '15.4M', volumeRaw: 15400000, low52w: 208.5, high52w: 520.4, trend: [490, 488, 487, 485.35] },
-  { symbol: 'NFLX', name: 'Netflix', price: 625.50, change: 8.25, changePercent: 1.34, volume: '10.2M', volumeRaw: 10200000, low52w: 315.6, high52w: 640.2, trend: [610, 615, 620, 625.5] },
-  { symbol: 'AMD', name: 'Advanced Micro Devices', price: 178.45, change: -2.35, changePercent: -1.30, volume: '62.4M', volumeRaw: 62400000, low52w: 81.2, high52w: 227.3, trend: [182, 180, 179, 178.45] },
-  { symbol: 'INTC', name: 'Intel Corp.', price: 34.20, change: 0.55, changePercent: 1.63, volume: '45.1M', volumeRaw: 45100000, low52w: 24.8, high52w: 51.3, trend: [33, 33.5, 33.8, 34.2] },
+  { symbol: 'BHARTIARTL', name: 'Bharti Airtel Ltd', price: 1120.00, change: 4.45, changePercent: 0.40, volume: '8.1M', volumeRaw: 8100000, low52w: 800.5, high52w: 1250.2, trend: [1110, 1115, 1112, 1120] },
+  { symbol: 'ADANIENT', name: 'Adani Enterprises Ltd', price: 2500.00, change: -34.12, changePercent: -1.35, volume: '5.4M', volumeRaw: 5400000, low52w: 1900.5, high52w: 3200.4, trend: [2550, 2530, 2510, 2500] },
+  { symbol: 'TATAMOTORS', name: 'Tata Motors Ltd', price: 1000.00, change: 18.35, changePercent: 1.87, volume: '22.4M', volumeRaw: 22400000, low52w: 500.5, high52w: 1100.4, trend: [980, 985, 990, 1000] },
 ];
 
 const Sparkline = ({ data, color }: { data: number[], color: string }) => {
@@ -64,6 +64,8 @@ export default function WatchlistPage() {
   const [watchlists, setWatchlists] = useState([
     { name: 'Your Watchlist', stocks: INITIAL_STOCKS }
   ]);
+  const router = useRouter();
+  const { setSelectedSymbol } = useMarket();
   const [activeTab, setActiveTab] = useState(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAddStocksModalOpen, setIsAddStocksModalOpen] = useState(false);
@@ -169,6 +171,12 @@ export default function WatchlistPage() {
     } else {
       setSelectedTradeStock(stock);
     }
+  };
+
+  const handleCompanyClick = (symbol: string) => {
+    if (isEditMode) return;
+    setSelectedSymbol(symbol);
+    router.push('/dashboard');
   };
 
   const handleDummySubmitOrder = async (order: any) => {
@@ -438,12 +446,18 @@ export default function WatchlistPage() {
                           <GripVertical size={16} />
                         </div>
                       )}
-                      <div className="company-icon" style={{ backgroundColor: `rgba(${isPositive ? '34, 197, 94' : '239, 68, 68'}, 0.1)` }}>
-                        <span style={{ color }}>{item.symbol[0]}</span>
-                      </div>
-                      <div className="company-info">
-                        <span className="company-symbol">{item.symbol}</span>
-                        <span className="company-name text-muted">{item.name}</span>
+                      <div 
+                        className="company-clickable-area" 
+                        onClick={() => handleCompanyClick(item.symbol)}
+                        style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)', cursor: isEditMode ? 'default' : 'pointer' }}
+                      >
+                        <div className="company-icon" style={{ backgroundColor: `rgba(${isPositive ? '34, 197, 94' : '239, 68, 68'}, 0.1)` }}>
+                          <span style={{ color }}>{item.symbol[0]}</span>
+                        </div>
+                        <div className="company-info">
+                          <span className="company-symbol">{item.symbol}</span>
+                          <span className="company-name text-muted">{item.name}</span>
+                        </div>
                       </div>
                     </div>
                   </td>
