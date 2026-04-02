@@ -12,12 +12,15 @@ export default function Navbar() {
   const { selectedSymbol, assets, marketStats, setIsOrderActive } = useMarket();
 
   const currentAsset = assets?.find(a => a.symbol === selectedSymbol);
-  const priceChange = currentAsset
-    ? ((currentAsset.current_price - (currentAsset.initial_price || currentAsset.current_price)) /
-       (currentAsset.initial_price || currentAsset.current_price) * 100)
-    : 0;
-  const isPositive = priceChange >= 0;
   const stats = marketStats || {};
+
+  const priceChange = (() => {
+    if (!currentAsset) return 0;
+    const initial = currentAsset.initial_price || currentAsset.current_price;
+    if (!initial) return 0;
+    return ((currentAsset.current_price - initial) / initial) * 100;
+  })();
+  const isPositive = priceChange >= 0;
 
   return (
     <header className="navbar" id="main-navbar">
@@ -76,9 +79,9 @@ export default function Navbar() {
         <button className="theme-toggle" onClick={toggleTheme} title="Toggle theme" id="btn-theme-toggle">
           {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
         </button>
-        <div className="ws-status" id="ws-status">
-          <span className="status-dot active"></span>
-          <span>Live</span>
+        <div className="nav-status">
+          <span className="status-dot"></span>
+          Live
         </div>
       </div>
     </header>
