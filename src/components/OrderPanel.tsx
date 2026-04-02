@@ -1,9 +1,14 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { AlertCircle, CheckCircle2, Info, TrendingUp, TrendingDown, Zap, X } from 'lucide-react';
+import { useMarket } from '../context/MarketContext';
 import './OrderPanel.css';
 
 export default function OrderPanel({ symbol, currentPrice, onSubmitOrder, cashBalance }) {
+  const { selectedSymbol, isOrderActive, setIsOrderActive } = useMarket();
+  const activeSymbol = symbol || selectedSymbol;
+
   const [side, setSide] = useState('buy');
   const [orderType, setOrderType] = useState('market');
   const [price, setPrice] = useState(currentPrice?.toFixed(2) || '');
@@ -11,67 +16,120 @@ export default function OrderPanel({ symbol, currentPrice, onSubmitOrder, cashBa
   const [stopPrice, setStopPrice] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [feedback, setFeedback] = useState(null);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string | undefined>>({});
+  const quantityRef = useRef<HTMLInputElement>(null);
+
+  const isBuy = side === 'buy';
+  const parsedQty = parseInt(quantity, 10) || 0;
+  const accentColor = isBuy ? 'var(--color-buy)' : 'var(--color-sell)';
 
   // Sync price when symbol/currentPrice changes from external navbar
   React.useEffect(() => {
     setPrice(currentPrice?.toFixed(2) || '');
     setQuantity('');
     setStopPrice('');
-  }, [symbol, currentPrice]);
+  }, [activeSymbol, currentPrice]);
 
   const total = price && quantity ? (parseFloat(price) * parseFloat(quantity)).toFixed(2) : '0.00';
+  const estimatedTotal = orderType === 'market'
+    ? (currentPrice || 0) * parsedQty
+    : parseFloat(price || '0') * parsedQty;
+  const isValidOrder = parsedQty > 0 && (orderType === 'market' || parseFloat(price) > 0);
+
+  const handleSideChange = (s: string) => {
+    setSide(s);
+    setIsOrderActive(true);
+  };
+
+  const handleTypeChange = (t: string) => {
+    setOrderType(t);
+    if (t === 'market') setPrice(currentPrice?.toFixed(2) || '');
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!quantity) return;
     if (orderType === 'stop' && (!price || !stopPrice)) return;
-    if (orderType === 'limit' && !price) return; // For future-proofing although limit is hidden now
+    if (orderType === 'limit' && !price) return;
+    setShowConfirm(true);
+  };
 
+  const handleConfirm = async () => {
+    setShowConfirm(false);
     setSubmitting(true);
     setFeedback(null);
-
     try {
       const order = {
-        asset_symbol: symbol,
+        asset_symbol: activeSymbol,
         type: orderType,
         side,
         price: orderType === 'market' ? 0 : parseFloat(price),
-        quantity: parseFloat(quantity),
-        stop_price: orderType === 'stop' ? parseFloat(stopPrice) : 0,
+        quantity: parseInt(quantity, 10),
+        stop_price: 0,
       };
       await onSubmitOrder(order);
-      setFeedback({ type: 'success', message: `${side.toUpperCase()} order submitted!` });
+      setFeedback({
+        type: 'success',
+        message: `${side === 'buy' ? 'Buy' : 'Sell'} order placed for ${quantity} share${parseInt(quantity) > 1 ? 's' : ''} of ${activeSymbol}!`,
+      });
       setQuantity('');
-    } catch (err) {
-      setFeedback({ type: 'error', message: 'Order failed. Try again.' });
+      setIsOrderActive(false); // Revert layout on success
+    } catch {
+      setFeedback({ type: 'error', message: 'Order failed. Please try again.' });
     }
     setSubmitting(false);
-    setTimeout(() => setFeedback(null), 3000);
+    setTimeout(() => setFeedback(null), 4000);
   };
 
 
 
   return (
-    <div className="order-panel card" id="order-panel">
-      <div className="card-header">
-        <h3>Place Order</h3>
-        <span className="badge badge-accent">{symbol}</span>
+    <div className={`order-panel card op-${side}`} id="order-panel">
+      {/* ── Header ── */}
+      <div className="op-header">
+        <div className="op-header-left">
+          <span className="op-title">Place Order</span>
+          <span className="op-symbol-badge">{activeSymbol}</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          {currentPrice > 0 && (
+            <div className="op-live-price mono">
+              ₹{currentPrice.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              <span className="op-live-dot" />
+            </div>
+          )}
+          {isOrderActive && (
+            <button 
+              className="op-close-btn"
+              onClick={() => setIsOrderActive(false)}
+              aria-label="Close Order Panel"
+              style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex' }}
+            >
+              <X size={16} />
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Side Toggle */}
-      <div className="side-toggle">
+      {/* ── Buy / Sell Toggle ── */}
+      <div className="op-side-toggle">
         <button
-          className={`side-btn buy-btn ${side === 'buy' ? 'active' : ''}`}
-          onClick={() => setSide('buy')}
+          className={`op-side-btn op-buy-btn ${isBuy ? 'active' : ''}`}
+          onClick={() => handleSideChange('buy')}
           id="btn-side-buy"
+          type="button"
         >
+          <TrendingUp size={14} />
           Buy
         </button>
         <button
-          className={`side-btn sell-btn ${side === 'sell' ? 'active' : ''}`}
-          onClick={() => setSide('sell')}
+          className={`op-side-btn op-sell-btn ${!isBuy ? 'active' : ''}`}
+          onClick={() => handleSideChange('sell')}
           id="btn-side-sell"
+          type="button"
         >
+          <TrendingDown size={14} />
           Sell
         </button>
       </div>
@@ -81,9 +139,10 @@ export default function OrderPanel({ symbol, currentPrice, onSubmitOrder, cashBa
         {['market', 'stop'].map(t => (
           <button
             key={t}
-            className={`order-type-tab ${orderType === t ? 'active' : ''}`}
-            onClick={() => setOrderType(t)}
+            className={`op-type-tab ${orderType === t ? 'active' : ''}`}
+            onClick={() => handleTypeChange(t)}
             id={`order-type-${t}`}
+            type="button"
           >
             {t === 'stop' ? 'Limit' : t.charAt(0).toUpperCase() + t.slice(1)}
           </button>
@@ -134,15 +193,17 @@ export default function OrderPanel({ symbol, currentPrice, onSubmitOrder, cashBa
         <div className="form-group">
           <label>Shares</label>
           <input
+            ref={quantityRef}
             type="number"
             step="1"
             min="1"
             value={quantity}
-            onChange={e => setQuantity(e.target.value)}
-            placeholder="0"
-            className="mono"
+            onChange={e => { setQuantity(e.target.value); setErrors(prev => ({ ...prev, quantity: undefined })); }}
+            placeholder="Enter shares"
+            className="mono op-input"
             id="input-quantity"
           />
+          {errors.quantity && <span className="op-error-msg">{errors.quantity}</span>}
         </div>
 
 
@@ -153,23 +214,87 @@ export default function OrderPanel({ symbol, currentPrice, onSubmitOrder, cashBa
           <span className="total-value mono">₹{parseFloat(total).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
         </div>
 
-        {/* Submit */}
+        {/* ── Submit ── */}
         <button
           type="submit"
-          className={`btn btn-lg order-submit-btn ${side === 'buy' ? 'btn-buy' : 'btn-sell'}`}
-          disabled={submitting || !quantity}
+          className={`op-submit-btn ${isBuy ? 'op-submit-buy' : 'op-submit-sell'}`}
+          disabled={submitting || !isValidOrder}
           id="btn-submit-order"
         >
-          {submitting ? 'Submitting...' : `${side === 'buy' ? 'Buy' : 'Sell'} ${symbol}`}
+          {submitting ? (
+            <span className="op-submitting">
+              <span className="op-spinner" />
+              Placing Order…
+            </span>
+          ) : (
+            <>
+              {isBuy ? <TrendingUp size={15} /> : <TrendingDown size={15} />}
+              {isBuy ? 'Buy' : 'Sell'} {parsedQty > 0 ? parsedQty : ''} {activeSymbol}
+            </>
+          )}
         </button>
 
-        {/* Feedback */}
+        {/* ── Feedback ── */}
         {feedback && (
-          <div className={`order-feedback ${feedback.type}`}>
+          <div className={`op-feedback op-feedback-${feedback.type}`}>
+            {feedback.type === 'success' ? <CheckCircle2 size={14} /> : <AlertCircle size={14} />}
             {feedback.message}
           </div>
         )}
       </form>
+
+      {/* ── Confirmation Overlay ── */}
+      {showConfirm && (
+        <div className="op-confirm-overlay">
+          <div className="op-confirm-box">
+            <div className="op-confirm-title">Confirm Order</div>
+            <div className="op-confirm-details">
+              <div className="op-confirm-row">
+                <span>Action</span>
+                <span className={isBuy ? 'text-buy' : 'text-sell'} style={{ fontWeight: 700 }}>
+                  {isBuy ? 'BUY' : 'SELL'} · {orderType.toUpperCase()}
+                </span>
+              </div>
+              <div className="op-confirm-row">
+                <span>Symbol</span>
+                <span className="mono">{activeSymbol}</span>
+              </div>
+              <div className="op-confirm-row">
+                <span>Shares</span>
+                <span className="mono">{parsedQty.toLocaleString('en-IN')}</span>
+              </div>
+              {orderType !== 'market' && (
+                <div className="op-confirm-row">
+                  <span>Price</span>
+                  <span className="mono">₹{parseFloat(price).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                </div>
+              )}
+              <div className="op-confirm-row op-confirm-total">
+                <span>Est. Total</span>
+                <span className="mono" style={{ color: accentColor }}>
+                  ₹{estimatedTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+              </div>
+            </div>
+            <div className="op-confirm-actions">
+              <button
+                type="button"
+                className="op-confirm-cancel"
+                onClick={() => { setShowConfirm(false); setIsOrderActive(false); }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className={`op-confirm-submit ${isBuy ? 'op-submit-buy' : 'op-submit-sell'}`}
+                onClick={handleConfirm}
+              >
+                Confirm {isBuy ? 'Buy' : 'Sell'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

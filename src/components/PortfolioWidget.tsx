@@ -6,7 +6,9 @@ export default function PortfolioWidget({ portfolio, holdings, pnl, compact = fa
   const totalValue = (portfolio?.cash_balance || 0) +
     (holdings?.reduce((sum, h) => sum + h.market_value, 0) || 0);
 
-  const totalPnl = pnl?.total_pnl ?? (portfolio?.realized_pnl + portfolio?.unrealized_pnl) ?? 0;
+  const totalPnl = pnl?.total_pnl != null
+    ? pnl.total_pnl
+    : ((portfolio?.realized_pnl ?? 0) + (portfolio?.unrealized_pnl ?? 0));
   const pnlPercent = totalValue > 0 ? (totalPnl / (totalValue - totalPnl) * 100) : 0;
   const isPositive = totalPnl >= 0;
 
@@ -28,7 +30,7 @@ export default function PortfolioWidget({ portfolio, holdings, pnl, compact = fa
             <span className="detail-value mono">₹{portfolio?.cash_balance?.toLocaleString('en-IN', { minimumFractionDigits: 2 }) || '0.00'}</span>
           </div>
           <div className="compact-detail">
-            <span className="detail-label">P&L</span>
+            <span className="detail-label">P&amp;L</span>
             <span className={`detail-value mono ${isPositive ? 'text-buy' : 'text-sell'}`}>
               {isPositive ? '+' : ''}₹{totalPnl.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
             </span>
@@ -60,19 +62,19 @@ export default function PortfolioWidget({ portfolio, holdings, pnl, compact = fa
             <span className="hero-stat-value mono">₹{portfolio?.cash_balance?.toLocaleString('en-IN', { minimumFractionDigits: 2 }) || '0.00'}</span>
           </div>
           <div className="hero-stat">
-            <span className="hero-stat-label">Realized P&L</span>
+            <span className="hero-stat-label">Realized P&amp;L</span>
             <span className={`hero-stat-value mono ${(pnl?.realized_pnl || 0) >= 0 ? 'text-buy' : 'text-sell'}`}>
               {(pnl?.realized_pnl || 0) >= 0 ? '+' : ''}₹{(pnl?.realized_pnl || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
             </span>
           </div>
           <div className="hero-stat">
-            <span className="hero-stat-label">Unrealized P&L</span>
+            <span className="hero-stat-label">Unrealized P&amp;L</span>
             <span className={`hero-stat-value mono ${(pnl?.unrealized_pnl || 0) >= 0 ? 'text-buy' : 'text-sell'}`}>
               {(pnl?.unrealized_pnl || 0) >= 0 ? '+' : ''}₹{(pnl?.unrealized_pnl || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
             </span>
           </div>
           <div className="hero-stat">
-            <span className="hero-stat-label">Total P&L</span>
+            <span className="hero-stat-label">Total P&amp;L</span>
             <span className={`hero-stat-value mono ${isPositive ? 'text-buy' : 'text-sell'}`}>
               {isPositive ? '+' : ''}₹{totalPnl.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
             </span>
@@ -83,17 +85,17 @@ export default function PortfolioWidget({ portfolio, holdings, pnl, compact = fa
       {holdings && holdings.length > 0 && (
         <div className="holdings-section card">
           <div className="card-header">
-            <h3>Holdings</h3>
-            <span className="badge badge-accent">{holdings.length} stocks</span>
+            <h3>Positions</h3>
+            <span className="badge badge-accent">{holdings.length} positions</span>
           </div>
           <table className="data-table">
             <thead>
               <tr>
-                <th>Stock</th>
-                <th>Quantity</th>
+                <th>Symbol</th>
+                <th>Shares</th>
                 <th>Avg Cost</th>
                 <th>Market Value</th>
-                <th>P&L</th>
+                <th>P&amp;L</th>
               </tr>
             </thead>
             <tbody>
@@ -105,7 +107,8 @@ export default function PortfolioWidget({ portfolio, holdings, pnl, compact = fa
                     <td>
                       <span className="holding-symbol">{h.asset_symbol}</span>
                     </td>
-                    <td className="mono">{h.quantity.toFixed(2)}</td>
+                    {/* Whole shares — no decimal */}
+                    <td className="mono">{Number.isInteger(h.quantity) ? h.quantity : h.quantity.toLocaleString()}</td>
                     <td className="mono">₹{h.avg_cost_basis.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                     <td className="mono">₹{h.market_value.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                     <td className={`mono ${holdingPnl >= 0 ? 'text-buy' : 'text-sell'}`}>

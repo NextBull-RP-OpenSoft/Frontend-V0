@@ -13,6 +13,13 @@
     "trades portfolio";
 }
 
+.dashboard-grid.order-active {
+  grid-template-areas:
+    "chart orderpanel"
+    "trades orderbook"
+    "trades portfolio";
+}
+
 .dashboard-chart {
   grid-area: chart;
   min-height: 450px;
@@ -22,6 +29,7 @@
   grid-area: orderbook;
   max-height: 450px;
   overflow: hidden;
+  view-transition-name: orderbook-panel;
 }
 
 .dashboard-trades {
@@ -30,7 +38,10 @@
 
 .dashboard-order-panel {
   grid-area: orderpanel;
+  view-transition-name: orderpanel-panel;
 }
+
+
 
 .dashboard-portfolio {
   grid-area: portfolio;
@@ -53,7 +64,23 @@
       "portfolio";
   }
 
+  .dashboard-grid.order-active {
+    grid-template-areas:
+      "chart"
+      "orderpanel"
+      "orderbook"
+      "trades"
+      "portfolio";
+  }
+
   .dashboard-orderbook {
     max-height: 400px;
   }
+}
+
+/* View Transition Overrides */
+::view-transition-group(orderbook-panel),
+::view-transition-group(orderpanel-panel) {
+  animation-duration: 0.35s;
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }

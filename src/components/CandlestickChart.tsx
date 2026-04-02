@@ -1,8 +1,10 @@
 'use client';
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { Maximize, X } from 'lucide-react';
 import ChartEngine from '../chart/ChartEngine';
 import { computeSMA, computeEMA } from '../chart/computeIndicators';
+import { useMarket } from '../context/MarketContext';
 import './CandlestickChart.css';
 
 const INTERVALS = ['1s', '5s', '1m', '5m'];
@@ -13,10 +15,42 @@ export default function CandlestickChart({ candles, interval, onIntervalChange, 
   const [tooltipData, setTooltipData] = useState(null);
   const [showSMA, setShowSMA] = useState(true);
   const [showEMA, setShowEMA] = useState(true);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const { assets, symbolLoading } = useMarket();
+
+  // Get company name for subtitle
+  const currentAsset = assets?.find(a => a.symbol === symbol);
+  const companyName = currentAsset?.name || '';
 
   const handleTooltip = useCallback((data) => {
     setTooltipData(data);
   }, []);
+
+  // Fullscreen effect
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && isFullscreen) {
+        setIsFullscreen(false);
+      }
+    };
+    if (isFullscreen) {
+      window.addEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'auto';
+    }
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = 'auto';
+    };
+  }, [isFullscreen]);
+
+  // Handle resize on fullscreen toggle
+  useEffect(() => {
+    if (engineRef.current) {
+      setTimeout(() => engineRef.current.resize(), 50);
+    }
+  }, [isFullscreen]);
 
   // Create/destroy engine on mount/unmount
   useEffect(() => {
@@ -57,7 +91,7 @@ export default function CandlestickChart({ candles, interval, onIntervalChange, 
     engineRef.current.renderMain();
   }, [showSMA, showEMA]);
 
-  // Refresh theme when it changes (listen for data-theme attribute)
+  // Refresh theme when it changes
   useEffect(() => {
     const observer = new MutationObserver(() => {
       if (engineRef.current) engineRef.current.refreshTheme();
@@ -70,9 +104,7 @@ export default function CandlestickChart({ candles, interval, onIntervalChange, 
   }, []);
 
   const formatPrice = (p) => {
-    if (p >= 1000) return '$' + p.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    if (p >= 1) return '$' + p.toFixed(2);
-    return '$' + p.toFixed(4);
+    return '₹' + p.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
   const formatTime = (nanos) => {
@@ -84,15 +116,24 @@ export default function CandlestickChart({ candles, interval, onIntervalChange, 
     });
   };
 
+  const formatVolume = (v) => {
+    if (v >= 1_000_000) return (v / 1_000_000).toFixed(2) + 'M';
+    if (v >= 1_000) return (v / 1_000).toFixed(1) + 'K';
+    return v?.toString() ?? '0';
+  };
+
   const tooltipCandle = tooltipData?.candle;
   const isUp = tooltipCandle ? tooltipCandle.close >= tooltipCandle.open : true;
 
   return (
-    <div className="chart-container card" id="candlestick-chart">
+    <div className={`chart-container card ${isFullscreen ? 'fullscreen-mode' : ''}`} id="candlestick-chart">
       <div className="chart-header">
         <div className="chart-title">
-          <h3>{symbol}</h3>
-          <span className="chart-subtitle">Candlestick Chart</span>
+          <div className="chart-title-row">
+            <h3 className="chart-symbol">{symbol}</h3>
+            {companyName && <span className="chart-company-name">{companyName}</span>}
+          </div>
+          <span className="chart-subtitle">Candlestick · Stock Chart</span>
         </div>
         <div className="chart-controls">
           <div className="ma-toggles">
@@ -119,9 +160,37 @@ export default function CandlestickChart({ candles, interval, onIntervalChange, 
           </div>
         </div>
       </div>
-      <div className="chart-body" ref={containerRef}>
+
+      <div className={`chart-body ${symbolLoading ? 'chart-loading' : ''}`} ref={containerRef}>
+        {/* Fullscreen Toggle Button */}
+        {!symbolLoading && (
+          <button 
+            className={`chart-fullscreen-btn ${isFullscreen ? 'is-fullscreen' : ''}`}
+            onClick={() => setIsFullscreen(prev => !prev)}
+            aria-label="Toggle Fullscreen"
+            title={isFullscreen ? "Exit Fullscreen (Esc)" : "Fullscreen"}
+          >
+            {isFullscreen ? <X size={15} /> : <Maximize size={15} />}
+          </button>
+        )}
+
+        {symbolLoading && (
+          <div className="chart-skeleton-overlay">
+            <div className="skeleton-bars">
+              {Array.from({ length: 20 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="skeleton-bar"
+                  style={{ height: `${30 + Math.random() * 50}%`, animationDelay: `${i * 40}ms` }}
+                />
+              ))}
+            </div>
+            <div className="skeleton-label">Loading {symbol}…</div>
+          </div>
+        )}
+
         {/* Tooltip overlay */}
-        {tooltipCandle && tooltipData && (
+        {!symbolLoading && tooltipCandle && tooltipData && (
           <div
             className="chart-tooltip"
             style={{
@@ -153,8 +222,8 @@ export default function CandlestickChart({ candles, interval, onIntervalChange, 
               </div>
               <div className="tooltip-row">
                 <span className="tooltip-dot" style={{ background: 'var(--accent)' }} />
-                <span className="tooltip-label">Volume</span>
-                <span className="tooltip-value mono">{tooltipCandle.volume?.toFixed(2)}</span>
+                <span className="tooltip-label">Vol</span>
+                <span className="tooltip-value mono">{formatVolume(tooltipCandle.volume)}</span>
               </div>
             </div>
           </div>

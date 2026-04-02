@@ -1,107 +1,83 @@
 'use client';
 
 import React from 'react';
-import { Search, Zap, Sun, Moon, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Sun, Moon, Wifi, Zap } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useMarket } from '../context/MarketContext';
+import StockSelector from './StockSelector';
 import './Navbar.css';
 
 export default function Navbar() {
   const { theme, toggleTheme } = useTheme();
-  const { selectedSymbol, setSelectedSymbol, assets, marketStats } = useMarket();
+  const { selectedSymbol, assets, marketStats, setIsOrderActive } = useMarket();
 
   const currentAsset = assets?.find(a => a.symbol === selectedSymbol);
   const stats = marketStats || {};
 
-  const calculateChange = (asset) => {
-    if (!asset) return 0;
-    const initial = asset.initial_price || asset.current_price;
-    return ((asset.current_price - initial) / initial) * 100;
-  };
-
-  const formatCurrency = (val, dec = 2) => {
-    if (val == null) return '--';
-    return `₹${val.toLocaleString('en-IN', { minimumFractionDigits: dec, maximumFractionDigits: dec })}`;
-  };
+  const priceChange = (() => {
+    if (!currentAsset) return 0;
+    const initial = currentAsset.initial_price || currentAsset.current_price;
+    if (!initial) return 0;
+    return ((currentAsset.current_price - initial) / initial) * 100;
+  })();
+  const isPositive = priceChange >= 0;
 
   return (
-    <header className="navbar-v2" id="main-navbar">
-      {/* Left: Search */}
-      <div className="nav-section nav-search">
-        <div className="search-box">
-          <Search size={16} className="search-icon" />
-          <input type="text" placeholder="Search stocks..." />
-        </div>
+    <header className="navbar" id="main-navbar">
+
+
+      {/* Stock selector takes up the bulk of the bar */}
+      <div className="navbar-selector">
+        <StockSelector />
       </div>
 
-      {/* Middle-Left: Ticker Tabs */}
-      <div className="nav-section nav-ticker">
-        <button className="ticker-nav-btn"><ChevronLeft size={16} /></button>
-        <div className="ticker-scroll">
-          {assets.map(asset => {
-            const change = calculateChange(asset);
-            const isPos = change >= 0;
-            return (
-              <button
-                key={asset.symbol}
-                className={`ticker-tab ${selectedSymbol === asset.symbol ? 'active' : ''}`}
-                onClick={() => setSelectedSymbol(asset.symbol)}
-              >
-                <span className="ticker-symbol">{asset.symbol}</span>
-                <span className="ticker-price">{formatCurrency(asset.current_price)}</span>
-                <span className={`ticker-change ${isPos ? 'pos' : 'neg'}`}>
-                  {isPos ? '+' : ''}{change.toFixed(2)}%
-                </span>
-              </button>
-            );
-          })}
-        </div>
-        <button className="ticker-nav-btn"><ChevronRight size={16} /></button>
-      </div>
+      <button 
+        className="navbar-place-order-btn"
+        onClick={() => setIsOrderActive(true)}
+      >
+        <Zap size={14} /> Place Order
+      </button>
 
-      {/* Middle-Right: Quick Stats / Order */}
-      <div className="nav-section nav-asset-detail">
-        <button 
-          className="nav-place-order-btn"
-          onClick={() => {
-            const el = document.getElementById('order-panel');
-            el?.scrollIntoView({ behavior: 'smooth' });
-          }}
-        >
-          <Zap size={14} fill="currentColor" />
-          Place Order
-        </button>
-
+      {/* Right-side stats */}
+      <div className="navbar-right">
         {currentAsset && (
-          <div className="asset-quick-info">
-            <div className="info-main">
-              <span className="info-price">{formatCurrency(currentAsset.current_price)}</span>
-              <span className={`info-change ${calculateChange(currentAsset) >= 0 ? 'pos' : 'neg'}`}>
-                {calculateChange(currentAsset) >= 0 ? '▲' : '▼'} {Math.abs(calculateChange(currentAsset)).toFixed(2)}%
-              </span>
-            </div>
-            <div className="info-stats">
-              <div className="stat-item">
-                <span className="stat-label">VOL</span>
-                <span className="stat-value">2K</span>
-              </div>
-              <div className="stat-item">
-                <span className="stat-label">HI</span>
-                <span className="stat-value">{formatCurrency(stats.high24h)}</span>
-              </div>
-              <div className="stat-item">
-                <span className="stat-label">LO</span>
-                <span className="stat-value">{formatCurrency(stats.low24h)}</span>
-              </div>
-            </div>
+          <div className="price-display">
+            <span className="current-price mono">
+              ₹{currentAsset.current_price?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </span>
+            <span className={`price-change ${isPositive ? 'positive' : 'negative'}`}>
+              {isPositive ? '▲' : '▼'} {Math.abs(priceChange).toFixed(2)}%
+            </span>
           </div>
         )}
-      </div>
 
-      {/* Right: Actions */}
-      <div className="nav-section nav-actions">
-        <button className="theme-toggle" onClick={toggleTheme}>
-          {theme === 'dark' ? <Moon size={18} /> : <Sun size={18} />}
+        <div className="navbar-stat">
+          <span className="stat-label">Vol</span>
+          <span className="stat-value mono">
+            {stats.volume != null
+              ? (stats.volume >= 1_000_000
+                  ? `${(stats.volume / 1_000_000).toFixed(1)}M`
+                  : stats.volume >= 1_000
+                    ? `${(stats.volume / 1_000).toFixed(0)}K`
+                    : stats.volume.toFixed(0))
+              : '--'}
+          </span>
+        </div>
+        <div className="navbar-stat">
+          <span className="stat-label">Hi</span>
+          <span className="stat-value mono text-buy">
+            {stats.high24h != null ? `₹${stats.high24h.toLocaleString('en-IN', { maximumFractionDigits: 2 })}` : '--'}
+          </span>
+        </div>
+        <div className="navbar-stat">
+          <span className="stat-label">Lo</span>
+          <span className="stat-value mono text-sell">
+            {stats.low24h != null ? `₹${stats.low24h.toLocaleString('en-IN', { maximumFractionDigits: 2 })}` : '--'}
+          </span>
+        </div>
+
+        <button className="theme-toggle" onClick={toggleTheme} title="Toggle theme" id="btn-theme-toggle">
+          {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
         </button>
         <div className="nav-status">
           <span className="status-dot"></span>

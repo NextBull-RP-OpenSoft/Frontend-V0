@@ -61,6 +61,7 @@ export default function OrderBook({ orderBook }) {
         {/* Spread / Mid Price */}
         <div className="orderbook-spread">
           <span className="spread-price mono">₹{mid_price?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+          <span className="spread-price mono">₹{mid_price?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
           <span className="spread-label">Mid Price</span>
           {displayAsks[0] && displayBids[0] && (
             <span className="spread-value mono">

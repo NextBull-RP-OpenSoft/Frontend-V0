@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart2, RefreshCw, Info, Clock, X } from 'lucide-react';
 import * as api from '../services/api';
-import { STOCKS } from '../services/api/assets';
+import { useMarket } from '../context/MarketContext';
 import OrderPanel from '../components/OrderPanel';
 import './OrdersPage.css';
 
@@ -23,9 +23,9 @@ const statusBadgeClass = (status) => {
 };
 
 export default function OrdersPage() {
+  const { selectedSymbol, assets } = useMarket();
   const [orders, setOrders] = useState([]);
   const [activeTab, setActiveTab] = useState('all');
-  const [selectedSymbol, setSelectedSymbol] = useState('RELIANCE');
 
   const loadOrders = () => api.getOrders().then(res => {
     console.log('Normalized Orders Data:', res.data);
@@ -53,7 +53,7 @@ export default function OrdersPage() {
 
   const formatDate = (nanos) => {
     const date = new Date(Math.floor(nanos / 1_000_000));
-    return date.toLocaleString('en-US', {
+    return date.toLocaleString('en-IN', {
       month: 'short', day: 'numeric',
       hour: '2-digit', minute: '2-digit', second: '2-digit',
       hour12: false,
@@ -65,7 +65,7 @@ export default function OrdersPage() {
     setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: 'cancelled' } : o));
   };
 
-  const currentAssetPrice = STOCKS.find(s => s.symbol === selectedSymbol)?.current_price || 2450.85;
+  const currentAssetPrice = assets?.find(s => s.symbol === selectedSymbol)?.current_price || 2450.85;
 
   return (
     <div className="orders-page animate-fade-in" id="orders-page">
