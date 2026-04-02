@@ -5,6 +5,7 @@ import { useMarket } from '../context/MarketContext';
 import * as api from '../services/api';
 import * as ws from '../services/websocket';
 import CandlestickChart from '../components/CandlestickChart';
+import { DollarSign, Wallet, TrendingUp, BarChart3, RefreshCw } from 'lucide-react';
 import './PortfolioPage.css';
 
 // ── Portfolio Analysis Chart ─────────────────────────────────────────
@@ -195,7 +196,7 @@ function TopStatsCards({
       <div className="pf-top-card pf-tc-blue">
         <div className="pf-tc-header">
           <span className="pf-tc-title">TOTAL VALUE</span>
-          <span className="pf-tc-icon">$</span>
+          <span className="pf-tc-icon"><DollarSign size={16} /></span>
         </div>
         <div className="pf-tc-val mono">
           &#x20B9;{totalValue.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -211,7 +212,7 @@ function TopStatsCards({
       <div className="pf-top-card pf-tc-blue">
         <div className="pf-tc-header">
           <span className="pf-tc-title">CASH BALANCE</span>
-          <span className="pf-tc-icon">💵</span>
+          <span className="pf-tc-icon"><Wallet size={16} /></span>
         </div>
         <div className="pf-tc-val mono">
           &#x20B9;{totalCash.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -226,7 +227,7 @@ function TopStatsCards({
       <div className="pf-top-card pf-tc-green">
         <div className="pf-tc-header">
           <span className="pf-tc-title">REALIZED P&amp;L</span>
-          <span className="pf-tc-icon">↗</span>
+          <span className="pf-tc-icon"><TrendingUp size={16} /></span>
         </div>
         <div className="pf-tc-val mono">
           <span style={{ color: 'var(--text-primary)' }}>+&#x20B9;0.00</span>
@@ -241,7 +242,7 @@ function TopStatsCards({
       <div className="pf-top-card pf-tc-red">
         <div className="pf-tc-header">
           <span className="pf-tc-title">UNREALIZED P&amp;L</span>
-          <span className="pf-tc-icon">📊</span>
+          <span className="pf-tc-icon"><BarChart3 size={16} /></span>
         </div>
         <div className="pf-tc-val mono">
           <span style={{ color: 'var(--text-primary)' }}>
@@ -742,7 +743,7 @@ export default function PortfolioPage() {
                     setTimeout(() => setLastUpdated('10 sec ago'), 2000);
                   }}
                   title="Refresh"
-                >⟳</button>
+                ><RefreshCw size={14} /></button>
               </div>
             </div>
 
