@@ -97,12 +97,15 @@
   font-size: var(--text-sm);
   font-weight: 700;
   letter-spacing: 0.04em;
-  color: var(--text-muted);
   transition: background var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
-.op-buy-btn:hover  { color: var(--color-buy); }
-.op-sell-btn:hover { color: var(--color-sell); }
+/* Inactive states — show semantic color so they're visible in light mode */
+.op-buy-btn  { color: var(--color-buy); }
+.op-sell-btn { color: var(--color-sell); }
+
+.op-buy-btn:hover  { color: var(--color-buy-dim); }
+.op-sell-btn:hover { color: var(--color-sell-dim); }
 
 .op-buy-btn.active {
   background: var(--color-buy);
