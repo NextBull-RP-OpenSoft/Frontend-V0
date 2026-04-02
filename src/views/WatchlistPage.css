@@ -319,6 +319,7 @@
     align-items: center;
     gap: var(--space-md);
     min-width: 250px;
+    transition: opacity 0.1s ease-out;
 }
 
 .perf-value {
@@ -390,12 +391,15 @@
     pointer-events: all;
 }
 
+.watchlist-row:hover .perf-container {
+    opacity: 0;
+}
+
 .btn-row {
     display: flex;
     align-items: center;
     justify-content: center;
     border-radius: var(--radius-md);
-    transition: all var(--transition-fast);
     font-weight: 600;
     height: 32px;
 }
@@ -414,16 +418,18 @@
 }
 
 .btn-row.buy-sell {
-    background: var(--accent);
+    background: linear-gradient(90deg, #22c55e 51%, #ef4444 50%); /* Split gradient with slight overlap to prevent artifacts */
     color: #ffffff;
     padding: 0 12px;
     font-size: var(--text-xs);
     text-transform: uppercase;
+    border: none; /* Removed border to eliminate edge artifacts */
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    outline: none;
 }
 
 .btn-row.buy-sell:hover {
-    background: #60a5fa;
-    box-shadow: 0 0 10px var(--accent-muted);
+    filter: brightness(1.2);
 }
 
 .btn-row.remove {
@@ -434,7 +440,6 @@
 
 .btn-row.remove:hover {
     color: #f87171;
-    transform: scale(1.1);
 }
 
 .sparkline {
