@@ -5,7 +5,7 @@ import { AlertCircle, CheckCircle2, Info, TrendingUp, TrendingDown, Zap, X } fro
 import { useMarket } from '../context/MarketContext';
 import './OrderPanel.css';
 
-export default function OrderPanel({ symbol, currentPrice, onSubmitOrder, cashBalance }) {
+export default function OrderPanel({ symbol, currentPrice, onSubmitOrder, cashBalance, onClose }: { symbol?: string, currentPrice?: number, onSubmitOrder: any, cashBalance?: number, onClose?: () => void } | any) {
   const { selectedSymbol, isOrderActive, setIsOrderActive } = useMarket();
   const activeSymbol = symbol || selectedSymbol;
 
