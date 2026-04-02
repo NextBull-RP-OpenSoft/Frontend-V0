@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Plus, Edit2, X, Search, Check, BarChart2, Trash2, ArrowUpRight, ChevronUp, ChevronDown } from 'lucide-react';
 import './WatchlistPage.css';
+import TerminalPage from '../components/Terminal/TerminalPage';
 
 // Dummy data for initial implementation
 const INITIAL_STOCKS = [
@@ -211,6 +212,7 @@ export default function WatchlistPage() {
   const [isListVisible, setIsListVisible] = useState(false);
   const [sortConfig, setSortConfig] = useState<{ key: string | null, direction: 'asc' | 'desc' }>({ key: null, direction: 'asc' });
   const [selectedTradeStock, setSelectedTradeStock] = useState<any | null>(null);
+  const [selectedTerminalStock, setSelectedTerminalStock] = useState<any | null>(null);
   const [tableSearchTerm, setTableSearchTerm] = useState('');
   
   const modalRef = useRef<HTMLDivElement>(null);
@@ -393,6 +395,18 @@ export default function WatchlistPage() {
     return sortConfig.direction === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />;
   };
 
+  // If terminal is open, render it as the main content
+  if (selectedTerminalStock) {
+    return (
+      <div className="watchlist-page" id="watchlist-page">
+        <TerminalPage
+          stock={selectedTerminalStock}
+          onClose={() => setSelectedTerminalStock(null)}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="watchlist-page animate-fade-in" id="watchlist-page">
       <header className="watchlist-header">
@@ -405,7 +419,7 @@ export default function WatchlistPage() {
       <div className="watchlist-tabs-row">
         <div className="tabs-scroll-area">
           {watchlists.map((wl, idx) => (
-            <button 
+            <button
               key={idx}
               className={`tab-item ${activeTab === idx ? 'active' : ''}`}
               onClick={() => setActiveTab(idx)}
@@ -420,9 +434,9 @@ export default function WatchlistPage() {
         <div className="tabs-actions">
           <div className="watchlist-search-container">
             <Search size={14} className="search-icon-tab" />
-            <input 
-              type="text" 
-              placeholder="Search watchlist..." 
+            <input
+              type="text"
+              placeholder="Search watchlist..."
               value={tableSearchTerm}
               onChange={e => setTableSearchTerm(e.target.value)}
               className="watchlist-search-input"
@@ -487,7 +501,7 @@ export default function WatchlistPage() {
                     <div className="perf-actions-container">
                        <PerformanceBar low={item.low52w} high={item.high52w} current={item.price} />
                        <div className="row-actions">
-                          <button className="btn-row terminal" title="Open Terminal"><BarChart2 size={18} /></button>
+                          <button className="btn-row terminal" title="Open Terminal" onClick={() => setSelectedTerminalStock(item)}><BarChart2 size={18} /></button>
                           <button className="btn-row buy-sell" onClick={() => handleTradeClick(item)}>Buy/Sell</button>
                           <button className="btn-row remove" onClick={() => handleDeleteStock(item.symbol)} title="Remove"><Trash2 size={18} /></button>
                        </div>
@@ -505,10 +519,10 @@ export default function WatchlistPage() {
       {selectedTradeStock && (
         <div className="modal-overlay" onClick={() => setSelectedTradeStock(null)}>
           <div className="modal-content animate-fade-in" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px' }}>
-            <WatchlistOrderPanel 
-              stock={selectedTradeStock} 
-              onClose={() => setSelectedTradeStock(null)} 
-              onSubmitOrder={handleDummySubmitOrder} 
+            <WatchlistOrderPanel
+              stock={selectedTradeStock}
+              onClose={() => setSelectedTradeStock(null)}
+              onSubmitOrder={handleDummySubmitOrder}
             />
           </div>
         </div>
@@ -521,15 +535,15 @@ export default function WatchlistPage() {
               <h3>{isModalOpen ? 'Create New Watchlist' : `Add Stocks to ${activeWatchlist.name}`}</h3>
               <button className="btn-close" onClick={handleCloseModal}><X size={20} /></button>
             </div>
-            
+
             <div className="modal-body custom-scrollbar">
               {isModalOpen && (
                 <div className="form-group">
                   <label>Watchlist Name</label>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     ref={nameInputRef}
-                    placeholder="e.g. My Favorites" 
+                    placeholder="e.g. My Favorites"
                     value={newWatchlistName}
                     onChange={e => setNewWatchlistName(e.target.value)}
                     onKeyDown={(e) => {
@@ -547,9 +561,9 @@ export default function WatchlistPage() {
                 <div className="search-action-row">
                   <div className="search-container" ref={searchContainerRef}>
                     <span className="search-icon"><Search size={16} /></span>
-                    <input 
-                      type="text" 
-                      placeholder="Search and hit enter..." 
+                    <input
+                      type="text"
+                      placeholder="Search and hit enter..."
                       value={searchTerm}
                       ref={stockSearchRef}
                       onChange={e => setSearchTerm(e.target.value)}
@@ -559,9 +573,9 @@ export default function WatchlistPage() {
                     {isListVisible && searchTerm && filteredSuggestions.length > 0 && (
                       <div className="search-suggestions">
                         {filteredSuggestions.map((stock, i) => (
-                          <div 
-                            key={stock.symbol} 
-                            className={`suggestion-item ${focusedIndex === i ? 'focused' : ''}`} 
+                          <div
+                            key={stock.symbol}
+                            className={`suggestion-item ${focusedIndex === i ? 'focused' : ''}`}
                             onMouseDown={(e) => e.preventDefault()}
                             onClick={() => toggleStock(stock)}
                           >
@@ -575,8 +589,8 @@ export default function WatchlistPage() {
                       </div>
                     )}
                   </div>
-                  <button 
-                    className="btn-action primary btn-inline" 
+                  <button
+                    className="btn-action primary btn-inline"
                     onClick={isModalOpen ? handleCreateWatchlist : handleAddStocksToActive}
                     disabled={(!isModalOpen && selectedStocks.length === 0) || (isModalOpen && (!newWatchlistName.trim() || selectedStocks.length === 0))}
                   >

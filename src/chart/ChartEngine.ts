@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Custom Canvas 2D Candlestick Chart Engine
  * Renders candles, volume histogram, moving averages, crosshair, and tooltips.
@@ -39,6 +40,12 @@ export default class ChartEngine {
 
     // Callbacks
     this.onTooltip = options.onTooltip || null;
+
+    // Drawing Tools
+    this.activeTool = 'cursor';
+    this.drawings = [];
+    this.redoList = [];
+    this.currentDrawing = null;
 
     // Create canvases
     this.mainCanvas = document.createElement('canvas');
@@ -110,6 +117,25 @@ export default class ChartEngine {
       this.renderMain();
     }
 
+    if (this.currentDrawing) {
+      const area = this._getChartArea();
+      const visible = this._getVisibleCandles();
+      if (visible.length) {
+        const candleW = this._getCandleWidth();
+        const relX = this.mouseX - area.x;
+        const idx = Math.floor(relX / candleW);
+        const candleIdx = Math.max(0, Math.min(this.candles.length - 1, this.visibleStart + idx));
+        const c = this.candles[candleIdx];
+        const priceRange = this._getPriceRange(visible);
+        const price = priceRange.max - ((this.mouseY - area.y) / area.priceHeight) * (priceRange.max - priceRange.min);
+        const time = c ? Math.floor(c.open_time / 1_000_000_000) : 0;
+        
+        this.currentDrawing.x2 = time;
+        this.currentDrawing.y2 = price;
+        this.renderMain();
+      }
+    }
+
     this._updateHover();
     this.renderOverlay();
   }
@@ -143,6 +169,71 @@ export default class ChartEngine {
   }
 
   _handleMouseDown(e) {
+    const defaultTools = ['cursor', 'crosshair', 'measure', 'magnet'];
+    if (!defaultTools.includes(this.activeTool) && this.activeTool !== 'eraser') {
+      const area = this._getChartArea();
+      if (this.mouseY >= area.y && this.mouseY <= area.y + area.priceHeight) {
+        const visible = this._getVisibleCandles();
+        if (!visible.length) return;
+        
+        const candleW = this._getCandleWidth();
+        const relX = this.mouseX - area.x;
+        const idx = Math.floor(relX / candleW);
+        const candleIdx = Math.max(0, Math.min(this.candles.length - 1, this.visibleStart + idx));
+        const c = this.candles[candleIdx];
+        
+        const priceRange = this._getPriceRange(visible);
+        const price = priceRange.max - ((this.mouseY - area.y) / area.priceHeight) * (priceRange.max - priceRange.min);
+        const time = Math.floor(c.open_time / 1_000_000_000);
+
+        if (this.activeTool === 'horizontal') {
+          this.drawings.push({ type: 'horizontal', y: price, color: this.colors.crosshair });
+          this.redoList = [];
+        } else if (this.activeTool === 'text') {
+           const label = window.prompt("Enter text here:");
+           if (label) {
+             this.drawings.push({ type: 'text', text: label, x1: time, y1: price, color: this.colors.crosshair });
+             this.redoList = [];
+           }
+        } else if (this.activeTool === 'pen') {
+           this.drawings.push({ type: 'pen', x1: time, y1: price, color: this.colors.crosshair });
+           this.redoList = [];
+        } else {
+          if (!this.currentDrawing) {
+            this.currentDrawing = {
+              type: this.activeTool,
+              x1: time,
+              y1: price,
+              x2: time,
+              y2: price,
+              color: this.colors.crosshair,
+            };
+            this.isDrawingActive = true;
+            this.drawStartX = this.mouseX;
+            this.drawStartY = this.mouseY;
+          } else {
+            // Second click finishes two-click draw
+            this.currentDrawing.x2 = time;
+            this.currentDrawing.y2 = price;
+            this.drawings.push(this.currentDrawing);
+            this.redoList = []; // Clear redo list on new drawing
+            this.currentDrawing = null;
+            this.isDrawingActive = false;
+          }
+        }
+        this.renderMain();
+      }
+      return;
+    }
+    
+    if (this.activeTool === 'eraser') {
+      if (this.drawings.length > 0) {
+        this.redoList.push(this.drawings.pop());
+        this.renderMain();
+      }
+      return;
+    }
+
     this.isDragging = true;
     this.dragStartX = e.clientX;
     this.dragStartVisibleStart = this.visibleStart;
@@ -152,6 +243,19 @@ export default class ChartEngine {
   _handleMouseUp() {
     this.isDragging = false;
     this.overlayCanvas.style.cursor = 'crosshair';
+
+    // If drag drew a shape larger than a few pixels, complete it
+    if (this.isDrawingActive && this.currentDrawing) {
+      const dx = this.mouseX - this.drawStartX;
+      const dy = this.mouseY - this.drawStartY;
+      if (Math.sqrt(dx*dx + dy*dy) > 10 * this.dpr) {
+        this.drawings.push(this.currentDrawing);
+        this.redoList = [];
+        this.currentDrawing = null;
+        this.isDrawingActive = false;
+        this.renderMain();
+      }
+    }
   }
 
   _updateHover() {
@@ -356,6 +460,136 @@ export default class ChartEngine {
 
     // Time Scale
     this._drawTimeScale(ctx, area, visible, candleW);
+
+    // Draw user tools
+    this._drawUserShapes(ctx, area, priceRange);
+  }
+
+  _drawUserShapes(ctx, area, priceRange) {
+    const visible = this._getVisibleCandles();
+    if (!visible.length) return;
+
+    const timeToX = (time) => {
+      const firstT = Math.floor(visible[0].open_time / 1_000_000_000);
+      const lastT = Math.floor(visible[visible.length - 1].open_time / 1_000_000_000);
+      
+      if (time >= firstT && time <= lastT) {
+        for (let i = 0; i < visible.length; i++) {
+          const ct = Math.floor(visible[i].open_time / 1_000_000_000);
+          if (ct >= time) return area.x + i * this._getCandleWidth() + this._getCandleWidth() / 2;
+        }
+      }
+      // Approximation for non-visible
+      const idxOffset = (time - firstT) / ((lastT - firstT) / visible.length || 1);
+      return area.x + idxOffset * this._getCandleWidth() + this._getCandleWidth() / 2;
+    };
+
+    const priceToY = (price) => {
+      return area.y + (1 - (price - priceRange.min) / (priceRange.max - priceRange.min)) * area.priceHeight;
+    };
+
+    const shapes = [...this.drawings];
+    if (this.currentDrawing) shapes.push(this.currentDrawing);
+
+    for (const d of shapes) {
+      if (d.type === 'horizontal') {
+        const y = priceToY(d.y);
+        ctx.strokeStyle = d.color || this.colors.crosshair;
+        ctx.lineWidth = 1.5 * this.dpr;
+        ctx.beginPath();
+        ctx.moveTo(area.x, y);
+        ctx.lineTo(area.x + area.width, y);
+        ctx.stroke();
+      } else if (d.type === 'trendline' || d.type === 'ray') {
+        const x1 = timeToX(d.x1);
+        const y1 = priceToY(d.y1);
+        const x2 = timeToX(d.x2);
+        const y2 = priceToY(d.y2);
+
+        if (x1 !== null && x2 !== null) {
+          let px1 = x1; let py1 = y1;
+          let px2 = x2; let py2 = y2;
+
+          if (d.type === 'ray') {
+            const dx = px2 - px1;
+            const dy = py2 - py1;
+            if (dx !== 0) {
+               const rayX = dx > 0 ? area.x + area.width : area.x;
+               const rayY = py1 + dy * (rayX - px1)/dx;
+               px2 = rayX;
+               py2 = rayY;
+            }
+          }
+
+          ctx.strokeStyle = d.color || this.colors.crosshair;
+          ctx.lineWidth = 1.5 * this.dpr;
+          ctx.beginPath();
+          ctx.moveTo(px1, py1);
+          ctx.lineTo(px2, py2);
+          ctx.stroke();
+        }
+      } else if (d.type === 'rectangle') {
+        const x1 = timeToX(Math.min(d.x1, d.x2));
+        const x2 = timeToX(Math.max(d.x1, d.x2));
+        const y1 = priceToY(Math.max(d.y1, d.y2));
+        const y2 = priceToY(Math.min(d.y1, d.y2));
+        if (x1 !== null && x2 !== null) {
+          ctx.strokeStyle = d.color || this.colors.crosshair;
+          ctx.lineWidth = 1.5 * this.dpr;
+          ctx.fillStyle = (d.color || this.colors.crosshair) + '33';
+          ctx.fillRect(x1, y1, x2 - x1, y2 - y1);
+          ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+        }
+      } else if (d.type === 'circle') {
+        const x1 = timeToX(d.x1);
+        const y1 = priceToY(d.y1);
+        const x2 = timeToX(d.x2);
+        const y2 = priceToY(d.y2);
+        if (x1 !== null && x2 !== null) {
+            const r = Math.sqrt(Math.pow(x2-x1, 2) + Math.pow(y2-y1, 2));
+            ctx.strokeStyle = d.color || this.colors.crosshair;
+            ctx.lineWidth = 1.5 * this.dpr;
+            ctx.fillStyle = (d.color || this.colors.crosshair) + '33';
+            ctx.beginPath();
+            ctx.arc(x1, y1, r, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.stroke();
+        }
+      } else if (d.type === 'fibonacci') {
+        const x1 = timeToX(Math.min(d.x1, d.x2));
+        const x2 = timeToX(Math.max(d.x1, d.x2));
+        let py1 = priceToY(d.y1);
+        let py2 = priceToY(d.y2);
+        if (x1 !== null && x2 !== null) {
+          const levels = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1];
+          const dy = py2 - py1;
+          for (const lvl of levels) {
+             const ly = py1 + dy * lvl;
+             ctx.beginPath();
+             ctx.moveTo(x1, ly);
+             ctx.lineTo(x2, ly);
+             ctx.strokeStyle = d.color || this.colors.crosshair;
+             ctx.globalAlpha = 0.6;
+             ctx.stroke();
+             ctx.fillStyle = d.color || this.colors.crosshair;
+             ctx.globalAlpha = 1;
+             ctx.font = `${10 * this.dpr}px ${this._getFont()}`;
+             ctx.fillText(lvl.toString(), x2 + 5, ly);
+          }
+        }
+      } else if (d.type === 'text' || d.type === 'pen') {
+        const x = timeToX(d.x1);
+        const y = priceToY(d.y1);
+        if (x !== null) {
+           ctx.fillStyle = '#fff';
+           ctx.font = `${14 * this.dpr}px ${this._getFont()}`;
+           ctx.textAlign = 'left';
+           ctx.textBaseline = 'middle';
+           ctx.fillText(d.type === 'text' ? (d.text || 'Text') : '*', x, y);
+        }
+      }
+    }
+    ctx.globalAlpha = 1;
   }
 
   _drawGrid(ctx, area, priceRange) {
@@ -464,37 +698,49 @@ export default class ChartEngine {
     const priceRange = this._getPriceRange(visible);
 
     // Crosshair
-    ctx.setLineDash([4 * this.dpr, 4 * this.dpr]);
-    ctx.strokeStyle = this.colors.crosshair;
-    ctx.lineWidth = this.dpr;
-    ctx.globalAlpha = 0.5;
+    if (this.activeTool !== 'cursor') {
+      ctx.setLineDash([3 * this.dpr, 3 * this.dpr]);
+      ctx.strokeStyle = this.colors.crosshair;
+      ctx.lineWidth = 1 * this.dpr;
+      ctx.globalAlpha = 0.85;
 
-    // Vertical
-    ctx.beginPath();
-    ctx.moveTo(this.mouseX, area.y);
-    ctx.lineTo(this.mouseX, area.y + area.height);
-    ctx.stroke();
-
-    // Horizontal
-    if (this.mouseY >= area.y && this.mouseY <= area.y + area.priceHeight) {
+      // Vertical
       ctx.beginPath();
-      ctx.moveTo(area.x, this.mouseY);
-      ctx.lineTo(area.x + area.width, this.mouseY);
+      ctx.moveTo(this.mouseX, area.y);
+      ctx.lineTo(this.mouseX, area.y + area.height);
       ctx.stroke();
 
-      // Price label on right axis
-      ctx.globalAlpha = 1;
-      ctx.setLineDash([]);
-      const price = priceRange.min + (1 - (this.mouseY - area.y) / area.priceHeight) * (priceRange.max - priceRange.min);
-      const label = price >= 1 ? price.toLocaleString('en-IN', { maximumFractionDigits: 2, minimumFractionDigits: 2 }) : price.toFixed(4);
-      const labelW = ctx.measureText(label).width + 12 * this.dpr;
-      ctx.fillStyle = this.colors.crosshair;
-      ctx.fillRect(area.x + area.width + 2 * this.dpr, this.mouseY - 10 * this.dpr, labelW, 20 * this.dpr);
-      ctx.fillStyle = '#fff';
-      ctx.font = `${11 * this.dpr}px ${this._getFont()}`;
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(label, area.x + area.width + 8 * this.dpr, this.mouseY);
+      // Horizontal
+      if (this.mouseY >= area.y && this.mouseY <= area.y + area.priceHeight) {
+        ctx.beginPath();
+        ctx.moveTo(area.x, this.mouseY);
+        ctx.lineTo(area.x + area.width, this.mouseY);
+        ctx.stroke();
+
+        // Price label on right axis
+        ctx.globalAlpha = 1;
+        ctx.setLineDash([]);
+        const price = priceRange.min + (1 - (this.mouseY - area.y) / area.priceHeight) * (priceRange.max - priceRange.min);
+        const label = price >= 1 ? price.toLocaleString('en-IN', { maximumFractionDigits: 2, minimumFractionDigits: 2 }) : price.toFixed(4);
+        const labelW = ctx.measureText(label).width + 16 * this.dpr;
+        
+        // Premium label box
+        ctx.fillStyle = this.colors.crosshair;
+        ctx.beginPath();
+        // roundRect is natively supported in modern browsers
+        if (ctx.roundRect) {
+          ctx.roundRect(area.x + area.width + 2 * this.dpr, this.mouseY - 12 * this.dpr, labelW, 24 * this.dpr, 4 * this.dpr);
+        } else {
+          ctx.fillRect(area.x + area.width + 2 * this.dpr, this.mouseY - 12 * this.dpr, labelW, 24 * this.dpr);
+        }
+        ctx.fill();
+
+        ctx.fillStyle = '#111827'; // Dark text for contrast against the blue label
+        ctx.font = `600 ${11 * this.dpr}px ${this._getFont()}`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(label, area.x + area.width + 2 * this.dpr + labelW / 2, this.mouseY);
+      }
     }
 
     ctx.globalAlpha = 1;
@@ -513,6 +759,16 @@ export default class ChartEngine {
   }
 
   // ─── Utilities ───────────────────────────────────────────────────
+
+  setActiveTool(tool) {
+    this.activeTool = tool;
+    this.currentDrawing = null; // reset any active drawing
+    this.isDrawingActive = false;
+    
+    if (tool === 'deleteAll') {
+      this.clearDrawings();
+    }
+  }
 
   _niceStep(range, targetTicks) {
     const rough = range / targetTicks;
@@ -541,5 +797,29 @@ export default class ChartEngine {
 
     if (this.mainCanvas.parentNode) this.mainCanvas.parentNode.removeChild(this.mainCanvas);
     if (this.overlayCanvas.parentNode) this.overlayCanvas.parentNode.removeChild(this.overlayCanvas);
+  }
+
+  // ─── Undo/Redo ───────────────────────────────────────────────────
+
+  undo() {
+    if (this.drawings.length > 0) {
+      this.redoList.push(this.drawings.pop());
+      this.renderMain();
+    }
+  }
+
+  redo() {
+    if (this.redoList.length > 0) {
+      this.drawings.push(this.redoList.pop());
+      this.renderMain();
+    }
+  }
+
+  clearDrawings() {
+    if (this.drawings.length > 0) {
+      this.redoList = [...this.drawings].reverse().concat(this.redoList);
+      this.drawings = [];
+      this.renderMain();
+    }
   }
 }

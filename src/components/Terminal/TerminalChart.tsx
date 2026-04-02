@@ -10,13 +10,16 @@ interface TerminalChartProps {
   backendSymbol: string; // the actual backend symbol (e.g. RELIANCE mapped back)
   onPriceUpdate?: (price: number, change: number, changePct: number) => void;
   onOhlcvUpdate?: (ohlcv: { open: number; high: number; low: number; close: number; volume: number }) => void;
+  onHoverCandle?: (candle: any) => void;
+  activeTool?: string;
+  interval?: string;
+  command?: {cmd: string, ts: number} | null;
 }
 
 const INR_SCALE = 83.5;
 
-export default function TerminalChart({ symbol, backendSymbol, onPriceUpdate, onOhlcvUpdate }: TerminalChartProps) {
+export default function TerminalChart({ symbol, backendSymbol, onPriceUpdate, onOhlcvUpdate, onHoverCandle, activeTool, interval = '1m', command }: TerminalChartProps) {
   const [candles, setCandles] = useState<any[]>([]);
-  const [interval, setInterval_] = useState('1m');
   const [ohlcv, setOhlcv] = useState<{ open: number; high: number; low: number; close: number; volume: number } | null>(null);
   const intervalRef = useRef(interval);
   intervalRef.current = interval;
@@ -82,7 +85,7 @@ export default function TerminalChart({ symbol, backendSymbol, onPriceUpdate, on
         }
       }
     });
-    return () => unsub();
+    return () => { unsub(); };
   }, [backendSymbol, onPriceUpdate]);
 
   return (
@@ -124,8 +127,12 @@ export default function TerminalChart({ symbol, backendSymbol, onPriceUpdate, on
         <CandlestickChart
           candles={candles}
           interval={interval}
-          onIntervalChange={setInterval_}
+          onIntervalChange={() => {}}
           symbol={symbol}
+          activeTool={activeTool}
+          onHoverCandle={onHoverCandle}
+          command={command}
+          hideTooltip={true}
         />
       </div>
     </>
