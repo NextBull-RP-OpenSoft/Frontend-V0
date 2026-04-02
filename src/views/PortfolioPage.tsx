@@ -203,7 +203,7 @@ function TopStatsCards({
         </div>
         <div className="pf-tc-sub">Total Net Worth</div>
         <div className={`pf-tc-badge ${unrealizedPnl >= 0 ? 'pf-tcb-green' : 'pf-tcb-red'}`}>
-          <span className="pf-tcb-icon">{unrealizedPnl >= 0 ? '▲' : '▼'}</span>
+          <span className="pf-tcb-icon">{}</span>
           &#x20B9;{Math.abs(unrealizedPnl).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </div>
       </div>
@@ -219,7 +219,7 @@ function TopStatsCards({
         </div>
         <div className="pf-tc-sub">Buying Power</div>
         <div className="pf-tc-badge pf-tcb-green">
-          <span className="pf-tcb-icon">▲</span> Live
+          <span className="pf-tcb-icon"></span> Live
         </div>
       </div>
 
@@ -234,7 +234,7 @@ function TopStatsCards({
         </div>
         <div className="pf-tc-sub">Historical Returns</div>
         <div className="pf-tc-badge pf-tcb-green">
-          <span className="pf-tcb-icon">▲</span> All time
+          <span className="pf-tcb-icon"></span> All time
         </div>
       </div>
 
@@ -252,7 +252,7 @@ function TopStatsCards({
         </div>
         <div className="pf-tc-sub">Running Returns</div>
         <div className="pf-tc-badge pf-tcb-red">
-          <span className="pf-tcb-icon">▼</span> Current
+          <span className="pf-tcb-icon"></span> Current
         </div>
       </div>
     </div>
@@ -282,34 +282,7 @@ function Sparkline({ data, positive }: { data: number[]; positive: boolean }) {
   );
 }
 
-// ── Mini Wallet Line Chart ──────────────────────────────────────────
-function WalletChart({ data }: { data: number[] }) {
-  const w = 260, h = 60;
-  if (!data || data.length < 2) return <svg width={w} height={h} />;
-  const min = Math.min(...data);
-  const max = Math.max(...data);
-  const range = max - min || 1;
-  const pts = data
-    .map((v, i) => {
-      const x = (i / (data.length - 1)) * w;
-      const y = h - ((v - min) / range) * (h - 8) - 4;
-      return `${x},${y}`;
-    })
-    .join(' ');
-  const areaPoints = `0,${h} ${pts} ${w},${h}`;
-  return (
-    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} style={{ overflow: 'visible' }}>
-      <defs>
-        <linearGradient id="walletGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#7c3aed" stopOpacity="0.35" />
-          <stop offset="100%" stopColor="#7c3aed" stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      <polygon points={areaPoints} fill="url(#walletGrad)" />
-      <polyline points={pts} fill="none" stroke="#a78bfa" strokeWidth="2" strokeLinejoin="round" />
-    </svg>
-  );
-}
+
 
 // ── Donut Chart ──────────────────────────────────────────────────────
 function DonutChart({
@@ -452,9 +425,7 @@ const DUMMY_HOLDINGS = [
   },
 ];
 
-const WALLET_DATA = Array.from({ length: 40 }, (_, i) =>
-  1000000 + Math.sin(i / 5) * 15000 + i * 1200 + (Math.random() - 0.5) * 5000
-);
+
 
 const TIME_RANGES = ['1D', '1W', '1M', '3M', '6M', 'YTD'];
 
@@ -488,9 +459,9 @@ export default function PortfolioPage() {
   };
   const [currentPrice, setCurrentPrice] = useState(0);
   const [priceChange,  setPriceChange]  = useState({ abs: 12.5, pct: 0.44 });
-  const [walletCurrency, setWalletCurrency] = useState('INR');
-  const [lastUpdated, setLastUpdated]   = useState('10 sec ago');
+
   const [hoveredSector, setHoveredSector] = useState<number | null>(null);
+  const [hoveredHolding, setHoveredHolding] = useState<string | null>(null);
 
   const candleIntervalRef = useRef(candleInterval);
   candleIntervalRef.current = candleInterval;
@@ -622,18 +593,45 @@ export default function PortfolioPage() {
                 <tbody>
                   {DUMMY_HOLDINGS.map(h => {
                     const isPos = h.pnl >= 0;
+                    const color = ASSET_COLORS[h.asset_symbol] || '#3b82f6';
+                    const isHovered = hoveredHolding === h.asset_symbol;
+                    const isDimmed  = hoveredHolding !== null && !isHovered;
                     return (
-                      <tr key={h.asset_symbol} className="pf-table-row">
+                      <tr
+                        key={h.asset_symbol}
+                        className={`pf-table-row ${isHovered ? 'pf-row-active' : ''}`}
+                        style={{
+                          '--row-color': color,
+                          opacity: isDimmed ? 0.25 : 1,
+                          transition: 'opacity 0.2s ease',
+                          cursor: 'pointer',
+                        } as React.CSSProperties}
+                        onMouseEnter={() => setHoveredHolding(h.asset_symbol)}
+                        onMouseLeave={() => setHoveredHolding(null)}
+                      >
                         <td>
                           <div className="pf-asset-cell">
                             <div
                               className="pf-asset-icon"
-                              style={{ background: ASSET_COLORS[h.asset_symbol] || '#3b82f6' }}
+                              style={{
+                                background: color,
+                                transform: isHovered ? 'scale(1.25)' : 'scale(1)',
+                                transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                                boxShadow: isHovered ? `0 0 16px ${color}cc, 0 0 6px ${color}88` : '0 2px 8px rgba(0,0,0,0.4)',
+                              }}
                             >
                               {ASSET_ICONS[h.asset_symbol] || h.asset_symbol[0]}
                             </div>
                             <div className="pf-asset-info">
-                              <span className="pf-asset-name">{h.asset_symbol}</span>
+                              <span
+                                className="pf-asset-name"
+                                style={{
+                                  color: isHovered ? color : undefined,
+                                  fontWeight: isHovered ? 700 : undefined,
+                                  textShadow: isHovered ? `0 0 12px ${color}66` : undefined,
+                                  transition: 'color 0.2s ease, text-shadow 0.2s ease',
+                                }}
+                              >{h.asset_symbol}</span>
                               <span className="pf-asset-symbol">{h.exchange} · {h.quantity} shares</span>
                             </div>
                           </div>
@@ -687,7 +685,7 @@ export default function PortfolioPage() {
                     </button>
                   ))}
                 </div>
-                <span className="pf-live-badge">● NSE Live</span>
+                <span className="pf-live-badge">NSE Live</span>
               </div>
               <div className="pf-time-ranges">
                 {TIME_RANGES.map(r => (
@@ -710,7 +708,7 @@ export default function PortfolioPage() {
                 </span>
               </div>
               <span className={`pf-price-chg ${isChartPositive ? 'pos' : 'neg'}`}>
-                {isChartPositive ? '▲' : '▼'} {inr(priceChange.abs)} ({priceChange.pct.toFixed(2)}%)
+                {inr(priceChange.abs)} ({priceChange.pct.toFixed(2)}%)
               </span>
             </div>
 
@@ -729,66 +727,7 @@ export default function PortfolioPage() {
         {/* ── RIGHT COLUMN ───────────────────────────────── */}
         <div className="pf-right-col">
 
-          {/* Demat Account / Portfolio Value */}
-          <div className="pf-card pf-wallet">
-            <div className="pf-wallet-top-row">
-              <span className="pf-card-title">Demat Account</span>
-              <div className="pf-wallet-meta">
-                <span className="pf-wallet-updated">{lastUpdated}</span>
-                <button
-                  className="pf-wallet-refresh"
-                  onClick={() => {
-                    loadData();
-                    setLastUpdated('now');
-                    setTimeout(() => setLastUpdated('10 sec ago'), 2000);
-                  }}
-                  title="Refresh"
-                ><RefreshCw size={14} /></button>
-              </div>
-            </div>
 
-            <div className="pf-currency-sel">
-              <button className={`pf-cur-btn ${walletCurrency === 'INR' ? 'active' : ''}`} onClick={() => setWalletCurrency('INR')}>₹ INR</button>
-              <button className={`pf-cur-btn ${walletCurrency === 'USD' ? 'active' : ''}`} onClick={() => setWalletCurrency('USD')}>$ USD</button>
-            </div>
-
-            <div className="pf-balance-row">
-              <span className="pf-balance mono">
-                {walletCurrency === 'INR'
-                  ? inr(totalHoldings, 0)
-                  : '$' + (totalHoldings / INR_SCALE).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-              </span>
-              <span className={`pf-bal-badge ${(pnl?.total_pnl || 0) >= 0 ? 'badge-pos' : 'badge-neg'}`}>
-                ▲ 8.43%
-              </span>
-            </div>
-            <p className="pf-revenue-text">
-              Weekly gain: <strong>{inr(weeklyRevenue, 0)}</strong>
-            </p>
-            <div className="pf-wallet-chart">
-              <WalletChart data={WALLET_DATA} />
-            </div>
-
-            {/* Quick stats */}
-            <div className="pf-demat-stats">
-              <div className="pf-demat-stat">
-                <span className="pf-ds-label">Invested</span>
-                <span className="pf-ds-val mono">{inr(totalHoldings - 6210, 0)}</span>
-              </div>
-              <div className="pf-demat-stat">
-                <span className="pf-ds-label">Total P&amp;L</span>
-                <span className="pf-ds-val mono pnl-pos">+{inr(6210, 0)}</span>
-              </div>
-              <div className="pf-demat-stat">
-                <span className="pf-ds-label">Day&apos;s P&amp;L</span>
-                <span className="pf-ds-val mono pnl-pos">+{inr(2340, 0)}</span>
-              </div>
-              <div className="pf-demat-stat">
-                <span className="pf-ds-label">Free Margin</span>
-                <span className="pf-ds-val mono">{inr(totalCash, 0)}</span>
-              </div>
-            </div>
-          </div>
 
           {/* Sector Allocation */}
           <div className="pf-card pf-sector">
