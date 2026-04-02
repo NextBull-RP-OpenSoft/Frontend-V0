@@ -4,7 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
-import { LayoutDashboard, Wallet, ClipboardList, Bot, Settings, LogOut, List } from 'lucide-react';
+import { LayoutDashboard, Wallet, ClipboardList, Bot, Settings, LogOut, List, HelpCircle } from 'lucide-react';
 import BullLogo from './BullLogo';
 import './Sidebar.css';
 
@@ -14,6 +14,10 @@ const NAV_ITEMS = [
   { path: '/orders', label: 'Orders', icon: ClipboardList },
   { path: '/bots', label: 'Bots', icon: Bot },
   { path: '/watchlist', label: 'Watchlist', icon: List },
+];
+
+const SUPPORT_ITEMS = [
+  { path: '/faq', label: 'FAQ', icon: HelpCircle },
   { path: '/admin', label: 'Admin', icon: Settings },
 ];
 
@@ -38,8 +42,25 @@ export default function Sidebar() {
       </div>
 
       <nav className="sidebar-nav">
-        <div className="nav-section-label">Navigation</div>
+        <div className="nav-section-label">Main Navigation</div>
         {NAV_ITEMS.map(item => {
+          const Icon = item.icon;
+          const isActive = pathname === item.path;
+          return (
+            <Link
+              key={item.path}
+              href={item.path}
+              className={`sidebar-link ${isActive ? 'active' : ''}`}
+              id={`nav-${item.label.toLowerCase()}`}
+            >
+              <Icon size={18} className="sidebar-link-icon" />
+              <span className="sidebar-link-label">{item.label}</span>
+            </Link>
+          );
+        })}
+
+        <div className="nav-section-label support-label">Support & Settings</div>
+        {SUPPORT_ITEMS.map(item => {
           const Icon = item.icon;
           const isActive = pathname === item.path;
           return (

@@ -26,6 +26,8 @@ export default function OrdersPage() {
   const { selectedSymbol, assets } = useMarket();
   const [orders, setOrders] = useState([]);
   const [activeTab, setActiveTab] = useState('all');
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
 
   const loadOrders = () => api.getOrders().then(res => {
     console.log('Normalized Orders Data:', res.data);
@@ -47,9 +49,16 @@ export default function OrdersPage() {
     return () => clearInterval(interval);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const filtered = activeTab === 'all'
-    ? orders
-    : orders.filter(o => o.status === activeTab);
+  const filtered = orders.filter(o => {
+    const statusMatch = activeTab === 'all' || o.status === activeTab;
+    
+    // Date filtering (o.created_at is in nanoseconds)
+    const orderTimeMs = Math.floor(o.created_at / 1_000_000);
+    const fromMatch = fromDate ? orderTimeMs >= new Date(fromDate).setHours(0,0,0,0) : true;
+    const toMatch = toDate ? orderTimeMs <= new Date(toDate).setHours(23,59,59,999) : true;
+    
+    return statusMatch && fromMatch && toMatch;
+  });
 
   const formatDate = (nanos) => {
     const date = new Date(Math.floor(nanos / 1_000_000));
@@ -76,6 +85,35 @@ export default function OrdersPage() {
 
       <div className="orders-page-layout">
         <div className="orders-page-main">
+          {/* Order Filters */}
+          <div className="orders-filters card">
+            <div className="filter-group">
+              <label htmlFor="from-date" className="filter-label">From Date</label>
+              <input 
+                type="date" 
+                id="from-date"
+                className="filter-input"
+                value={fromDate}
+                onChange={(e) => setFromDate(e.target.value)}
+              />
+            </div>
+            <div className="filter-group">
+              <label htmlFor="to-date" className="filter-label">To Date</label>
+              <input 
+                type="date" 
+                id="to-date"
+                className="filter-input"
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
+              />
+            </div>
+            {(fromDate || toDate) && (
+              <button className="btn-clear-filters" onClick={() => { setFromDate(''); setToDate(''); }}>
+                Clear Filters
+              </button>
+            )}
+          </div>
+
           {/* Filter Tabs */}
           <div className="orders-tabs">
             {STATUS_TABS.map(tab => (
@@ -87,7 +125,18 @@ export default function OrdersPage() {
               >
                 {tab.charAt(0).toUpperCase() + tab.slice(1)}
                 <span className="tab-count">
-                  {tab === 'all' ? orders.length : orders.filter(o => o.status === tab).length}
+                  {tab === 'all' ? orders.filter(o => {
+                    const orderTimeMs = Math.floor(o.created_at / 1_000_000);
+                    const fromMatch = fromDate ? orderTimeMs >= new Date(fromDate).setHours(0,0,0,0) : true;
+                    const toMatch = toDate ? orderTimeMs <= new Date(toDate).setHours(23,59,59,999) : true;
+                    return fromMatch && toMatch;
+                  }).length : orders.filter(o => {
+                    const statusMatch = o.status === tab;
+                    const orderTimeMs = Math.floor(o.created_at / 1_000_000);
+                    const fromMatch = fromDate ? orderTimeMs >= new Date(fromDate).setHours(0,0,0,0) : true;
+                    const toMatch = toDate ? orderTimeMs <= new Date(toDate).setHours(23,59,59,999) : true;
+                    return statusMatch && fromMatch && toMatch;
+                  }).length}
                 </span>
               </button>
             ))}

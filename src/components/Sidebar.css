@@ -62,6 +62,10 @@
   margin-bottom: var(--space-xs);
 }
 
+.nav-section-label.support-label {
+  margin-top: var(--space-lg);
+}
+
 .sidebar-link {
   display: flex;
   align-items: center;
