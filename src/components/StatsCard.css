@@ -3,12 +3,8 @@
   overflow: hidden;
 }
 
-.stats-card-accent {
-  border-left: 3px solid var(--accent);
-}
 
 .stats-card-buy {
-  border-left: 3px solid var(--color-buy);
 }
 
 .stats-card-sell {
