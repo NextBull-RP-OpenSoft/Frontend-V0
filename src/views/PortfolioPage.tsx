@@ -394,36 +394,6 @@ const SECTORS = [
 ];
 
 // ── Dummy Indian stocks — always displayed ────────────────────────────
-const DUMMY_HOLDINGS = [
-  {
-    asset_symbol: 'RELIANCE', name: 'Reliance Industries Ltd.',
-    exchange: 'NSE',
-    quantity: 10, avg_cost_basis: 2510, market_value: 28500,
-    mkt_price: 2850, invested: 25100, pnl: 3400, pnl_pct: 13.55,
-    trend: [2510,2540,2580,2560,2620,2680,2650,2720,2790,2760,2810,2840,2830,2850],
-  },
-  {
-    asset_symbol: 'TCS', name: 'Tata Consultancy Services',
-    exchange: 'NSE',
-    quantity: 5, avg_cost_basis: 3280, market_value: 17250,
-    mkt_price: 3450, invested: 16400, pnl: 850, pnl_pct: 5.18,
-    trend: [3280,3300,3350,3310,3290,3320,3380,3360,3410,3430,3400,3440,3460,3450],
-  },
-  {
-    asset_symbol: 'INFY', name: 'Infosys Limited',
-    exchange: 'NSE',
-    quantity: 20, avg_cost_basis: 1450, market_value: 31600,
-    mkt_price: 1580, invested: 29000, pnl: 2600, pnl_pct: 8.97,
-    trend: [1450,1462,1455,1480,1470,1495,1510,1520,1505,1540,1560,1555,1575,1580],
-  },
-  {
-    asset_symbol: 'HDFCBANK', name: 'HDFC Bank Ltd.',
-    exchange: 'NSE',
-    quantity: 8, avg_cost_basis: 1620, market_value: 12320,
-    mkt_price: 1540, invested: 12960, pnl: -640, pnl_pct: -4.94,
-    trend: [1620,1610,1635,1625,1600,1590,1610,1580,1565,1555,1545,1538,1542,1540],
-  },
-];
 
 
 
@@ -536,14 +506,40 @@ export default function PortfolioPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chartSymbol, assets]);
 
+  // ── Live holdings derived from API state ─────────────────────────
+  const liveHoldings = holdings.map((h: any) => {
+    const asset = assets.find((a: any) => a.symbol === h.asset_symbol);
+    const mkt_price = asset?.current_price || (h.market_value / (h.quantity || 1));
+    const invested  = h.avg_cost_basis * h.quantity;
+    const pnl       = h.market_value - invested;
+    const pnl_pct   = invested > 0 ? (pnl / invested) * 100 : 0;
+    const trend     = Array.from({ length: 14 }, (_: any, i: number) => {
+      const t = i / 13;
+      return parseFloat((h.avg_cost_basis + (mkt_price - h.avg_cost_basis) * t).toFixed(2));
+    });
+    return {
+      asset_symbol: h.asset_symbol,
+      name: asset?.name || h.asset_symbol,
+      exchange: 'NSE',
+      quantity: h.quantity,
+      avg_cost_basis: h.avg_cost_basis,
+      market_value: h.market_value,
+      mkt_price,
+      invested,
+      pnl,
+      pnl_pct,
+      trend,
+    };
+  });
+
   // ── Derived values ────────────────────────────────────────────────
-  const totalCash     = (portfolio?.cash_balance || 100000) * INR_SCALE;
-  const totalHoldings = DUMMY_HOLDINGS.reduce((s, h) => s + h.market_value, 0);
+  const totalCash     = (portfolio?.cash_balance || 100000);
+  const totalHoldings = liveHoldings.reduce((s: number, h: any) => s + h.market_value, 0);
   const totalValue    = totalCash + totalHoldings;
   const weeklyRevenue = 56182.30;
 
   const isChartPositive = priceChange.abs >= 0;
-  const chartStockName = DUMMY_HOLDINGS.find(h => h.asset_symbol === chartSymbol)?.name || chartSymbol;
+  const chartStockName = liveHoldings.find((h: any) => h.asset_symbol === chartSymbol)?.name || chartSymbol;
 
   return (
     <div className="pf-page animate-fade-in" id="portfolio-page">
@@ -575,7 +571,7 @@ export default function PortfolioPage() {
           <div className="pf-card pf-assets-overview">
             <div className="pf-card-header">
               <span className="pf-card-title">Holdings</span>
-              <span className="pf-holdings-count">{DUMMY_HOLDINGS.length} Stocks</span>
+              <span className="pf-holdings-count">{liveHoldings.length} Stocks</span>
             </div>
             <div className="pf-table-wrap">
               <table className="pf-table">
@@ -591,7 +587,7 @@ export default function PortfolioPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {DUMMY_HOLDINGS.map(h => {
+                  {liveHoldings.map(h => {
                     const isPos = h.pnl >= 0;
                     const color = ASSET_COLORS[h.asset_symbol] || '#3b82f6';
                     const isHovered = hoveredHolding === h.asset_symbol;
@@ -703,7 +699,7 @@ export default function PortfolioPage() {
               <div>
                 <div className="pf-stock-full-name">{chartStockName}</div>
                 <span className="pf-chart-price mono">
-                  {currentPrice > 0 ? inr(currentPrice) : inr(DUMMY_HOLDINGS.find(h => h.asset_symbol === chartSymbol)?.mkt_price || 0)}
+                  {currentPrice > 0 ? inr(currentPrice) : inr(liveHoldings.find(h => h.asset_symbol === chartSymbol)?.mkt_price || 0)}
                   <span className="pf-price-unit"> NSE</span>
                 </span>
               </div>

@@ -40,6 +40,7 @@ export function getAssets() {
   return ASSETS.map(a => ({
     symbol: a.symbol,
     name: a.name,
+    initial_price: a.initial_price,
     current_price: parseFloat(getCurrentPrice(a.symbol).toFixed(2)),
   }));
 }
@@ -164,16 +165,38 @@ export function getOrderById(orderId: string) {
 }
 
 export function submitOrder(order: any) {
+  const sym: string = order.asset_symbol;
+  const qty: number = parseInt(order.quantity, 10) || 0;
+  const execPrice: number = order.price > 0 ? order.price : (priceState[sym] || 1000);
+  const cost = execPrice * qty;
+
+  if (order.side === 'buy') {
+    portfolioState.cash_balance -= cost;
+    if (!holdingsState[sym]) holdingsState[sym] = { quantity: 0, avg_cost_basis: execPrice };
+    const h = holdingsState[sym];
+    const newAvg = (h.avg_cost_basis * h.quantity + cost) / (h.quantity + qty);
+    h.quantity += qty;
+    h.avg_cost_basis = newAvg;
+  } else if (order.side === 'sell') {
+    const h = holdingsState[sym];
+    if (h && h.quantity >= qty) {
+      portfolioState.realized_pnl += (execPrice - h.avg_cost_basis) * qty;
+      portfolioState.cash_balance += cost;
+      h.quantity -= qty;
+    }
+  }
+
   const newOrder = {
     id: uuid(),
     ...order,
-    filled_quantity: 0,
-    status: 'submitted',
+    price: execPrice,
+    filled_quantity: qty,
+    status: 'filled',
     created_at: nanoTimestamp(),
     updated_at: nanoTimestamp(),
   };
   if (mockOrders) mockOrders.unshift(newOrder);
-  return { id: newOrder.id, status: 'submitted' };
+  return { id: newOrder.id, status: 'filled' };
 }
 
 export function cancelOrder(orderId: string) {
@@ -216,44 +239,51 @@ export function getPublicTrades() {
   return generateTrades().map(({ buy_order_id, sell_order_id, ...rest }) => rest);
 }
 
-// ---------- PORTFOLIO ----------
+// ---------- PORTFOLIO (mutable state) ----------
+const portfolioState = {
+  cash_balance: 574320.56,
+  realized_pnl: 12450.80,
+};
+
+interface Holding { quantity: number; avg_cost_basis: number; }
+const holdingsState: Record<string, Holding> = {
+  RELIANCE: { quantity: 100, avg_cost_basis: 2420.00 },
+  TCS:      { quantity: 50,  avg_cost_basis: 3580.00 },
+  HDFCBANK: { quantity: 200, avg_cost_basis: 1450.00 },
+};
+
 export function getPortfolio() {
+  const unrealized = Object.entries(holdingsState).reduce((sum, [sym, h]) => {
+    return sum + (priceState[sym] - h.avg_cost_basis) * h.quantity;
+  }, 0);
   return {
-    user_id: 'user-' + uuid().slice(0, 8),
-    cash_balance: 574320.56,
-    realized_pnl: 12450.80,
-    unrealized_pnl: -3820.15,
+    user_id: 'user-dandip',
+    cash_balance: parseFloat(portfolioState.cash_balance.toFixed(2)),
+    realized_pnl: parseFloat(portfolioState.realized_pnl.toFixed(2)),
+    unrealized_pnl: parseFloat(unrealized.toFixed(2)),
   };
 }
 
 export function getHoldings() {
-  return [
-    {
-      asset_symbol: 'RELIANCE',
-      quantity: 100,
-      avg_cost_basis: 2420.00,
-      market_value: parseFloat((priceState.RELIANCE * 100).toFixed(2)),
-    },
-    {
-      asset_symbol: 'TCS',
-      quantity: 50,
-      avg_cost_basis: 3580.00,
-      market_value: parseFloat((priceState.TCS * 50).toFixed(2)),
-    },
-    {
-      asset_symbol: 'HDFCBANK',
-      quantity: 200,
-      avg_cost_basis: 1450.00,
-      market_value: parseFloat((priceState.HDFCBANK * 200).toFixed(2)),
-    },
-  ];
+  return Object.entries(holdingsState)
+    .filter(([, h]) => h.quantity > 0)
+    .map(([sym, h]) => ({
+      asset_symbol: sym,
+      quantity: h.quantity,
+      avg_cost_basis: parseFloat(h.avg_cost_basis.toFixed(2)),
+      market_value: parseFloat((priceState[sym] * h.quantity).toFixed(2)),
+    }));
 }
 
 export function getPnL() {
+  const unrealized = Object.entries(holdingsState).reduce((sum, [sym, h]) => {
+    return sum + (priceState[sym] - h.avg_cost_basis) * h.quantity;
+  }, 0);
+  const total = portfolioState.realized_pnl + unrealized;
   return {
-    realized_pnl: 12450.80,
-    unrealized_pnl: -3820.15,
-    total_pnl: 8630.65,
+    realized_pnl: parseFloat(portfolioState.realized_pnl.toFixed(2)),
+    unrealized_pnl: parseFloat(unrealized.toFixed(2)),
+    total_pnl: parseFloat(total.toFixed(2)),
   };
 }
 

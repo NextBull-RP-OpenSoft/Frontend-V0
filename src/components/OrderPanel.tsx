@@ -24,12 +24,18 @@ export default function OrderPanel({ symbol, currentPrice, onSubmitOrder, cashBa
   const parsedQty = parseInt(quantity, 10) || 0;
   const accentColor = isBuy ? 'var(--color-buy)' : 'var(--color-sell)';
 
-  // Sync price when symbol/currentPrice changes from external navbar
+  // Reset fields when symbol changes
   React.useEffect(() => {
     setPrice(currentPrice?.toFixed(2) || '');
     setQuantity('');
     setStopPrice('');
-  }, [activeSymbol, currentPrice]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeSymbol]);
+
+  // Keep displayed price in sync with live ticks (don't reset quantity)
+  React.useEffect(() => {
+    setPrice(currentPrice?.toFixed(2) || '');
+  }, [currentPrice]);
 
   const total = price && quantity ? (parseFloat(price) * parseFloat(quantity)).toFixed(2) : '0.00';
   const estimatedTotal = orderType === 'market'
