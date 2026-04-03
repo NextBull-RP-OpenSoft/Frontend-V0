@@ -12,7 +12,11 @@ export async function getOrderById(orderId: string): Promise<any> {
 }
 
 export async function submitOrder(order: any): Promise<any> {
-  return dummy.submitOrder(order);
+  const result = dummy.submitOrder(order);
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('order:placed'));
+  }
+  return result;
 }
 
 export async function cancelOrder(orderId: string): Promise<any> {

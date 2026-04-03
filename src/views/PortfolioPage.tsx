@@ -184,11 +184,13 @@ function PortfolioAnalysisChart() {
 function TopStatsCards({
   totalValue,
   totalCash,
-  unrealizedPnl
+  unrealizedPnl,
+  realizedPnl,
 }: {
   totalValue: number;
   totalCash: number;
   unrealizedPnl: number;
+  realizedPnl: number;
 }) {
   return (
     <div className="pf-top-stats-row">
@@ -230,10 +232,12 @@ function TopStatsCards({
           <span className="pf-tc-icon"><TrendingUp size={16} /></span>
         </div>
         <div className="pf-tc-val mono">
-          <span style={{ color: 'var(--text-primary)' }}>+&#x20B9;0.00</span>
+          <span style={{ color: realizedPnl >= 0 ? 'var(--color-buy)' : 'var(--color-sell)' }}>
+            {realizedPnl >= 0 ? '+' : '-'}&#x20B9;{Math.abs(realizedPnl).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </span>
         </div>
         <div className="pf-tc-sub">Historical Returns</div>
-        <div className="pf-tc-badge pf-tcb-green">
+        <div className={`pf-tc-badge ${realizedPnl >= 0 ? 'pf-tcb-green' : 'pf-tcb-red'}`}>
           <span className="pf-tcb-icon"></span> All time
         </div>
       </div>
@@ -385,13 +389,25 @@ const ASSET_ICONS: Record<string, string> = {
   WIPRO:    'W',
 };
 
-// Indian market sectors
-const SECTORS = [
-  { label: 'IT & Tech',   value: 35, color: '#3b82f6' },
-  { label: 'Banking',     value: 30, color: '#8b5cf6' },
-  { label: 'FMCG',        value: 20, color: '#22c55e' },
-  { label: 'Auto',        value: 15, color: '#f59e0b' },
-];
+const SYMBOL_SECTOR: Record<string, string> = {
+  RELIANCE:   'Energy & FMCG',
+  TCS:        'IT & Tech',
+  INFY:       'IT & Tech',
+  HDFCBANK:   'Banking',
+  ICICIBANK:  'Banking',
+  BHARTIARTL: 'Telecom',
+  ADANIENT:   'Infrastructure',
+  TATAMOTORS: 'Auto',
+};
+
+const SECTOR_COLORS: Record<string, string> = {
+  'IT & Tech':       '#3b82f6',
+  'Banking':         '#8b5cf6',
+  'Energy & FMCG':   '#f59e0b',
+  'Auto':            '#f97316',
+  'Telecom':         '#22c55e',
+  'Infrastructure':  '#ec4899',
+};
 
 // ── Dummy Indian stocks — always displayed ────────────────────────────
 
@@ -420,13 +436,6 @@ export default function PortfolioPage() {
   const [candleInterval, setCandleInterval] = useState('1m');
   const [selectedRange,  setSelectedRange]  = useState('1D');
   const [chartSymbol,    setChartSymbol]    = useState('RELIANCE');
-  // Map display stock to a real asset symbol from the backend for candles
-  const CHART_TO_ASSET: Record<string, string> = {
-    RELIANCE: assets[0]?.symbol || 'BTC',
-    TCS:      assets[1]?.symbol || 'ETH',
-    INFY:     assets[2]?.symbol || 'SOL',
-    HDFCBANK: assets[0]?.symbol || 'BTC',
-  };
   const [currentPrice, setCurrentPrice] = useState(0);
   const [priceChange,  setPriceChange]  = useState({ abs: 12.5, pct: 0.44 });
 
@@ -448,23 +457,23 @@ export default function PortfolioPage() {
     } catch { /* silent */ }
   }, []);
 
+  const RANGE_TO_CANDLES: Record<string, { interval: string; count: number }> = {
+    '1D':  { interval: '5m', count: 288 },  // 24h of 5m
+    '1W':  { interval: '1h', count: 168 },  // 7 days of 1h
+    '1M':  { interval: '1h', count: 720 },  // 30 days of 1h
+    '3M':  { interval: '1d', count: 90  },  // 90 daily
+    '6M':  { interval: '1d', count: 180 },  // 180 daily
+    'YTD': { interval: '1d', count: 365 },  // full year
+  };
+
   const loadCandles = useCallback(async () => {
     try {
-      const assetSym = CHART_TO_ASSET[chartSymbol] || assets[0]?.symbol;
-      if (!assetSym) return;
-      const data = await api.getCandles(assetSym, candleInterval);
+      const { interval: rangeInterval, count: rangeCount } = RANGE_TO_CANDLES[selectedRange] || { interval: candleInterval, count: 100 };
+      const data = await api.getCandles(chartSymbol, rangeInterval, rangeCount);
       if (data?.length) {
-        // Scale to INR for visual realism
-        const scaled = data.map((c: any) => ({
-          ...c,
-          open:  parseFloat((c.open  * INR_SCALE).toFixed(2)),
-          high:  parseFloat((c.high  * INR_SCALE).toFixed(2)),
-          low:   parseFloat((c.low   * INR_SCALE).toFixed(2)),
-          close: parseFloat((c.close * INR_SCALE).toFixed(2)),
-        }));
-        setCandles(scaled);
-        const last = scaled[scaled.length - 1];
-        const prev = scaled[scaled.length - 2];
+        setCandles(data);
+        const last = data[data.length - 1];
+        const prev = data[data.length - 2];
         setCurrentPrice(last.close);
         if (prev) {
           const diff = last.close - prev.close;
@@ -472,21 +481,26 @@ export default function PortfolioPage() {
         }
       }
     } catch { /* silent */ }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chartSymbol, candleInterval, assets]);
+  }, [chartSymbol, candleInterval, selectedRange]);
 
-  useEffect(() => { loadData(); const iv = setInterval(loadData, 5000); return () => clearInterval(iv); }, [loadData]);
+  useEffect(() => {
+    loadData();
+    const iv = setInterval(loadData, 5000);
+    window.addEventListener('order:placed', loadData);
+    return () => {
+      clearInterval(iv);
+      window.removeEventListener('order:placed', loadData);
+    };
+  }, [loadData]);
   useEffect(() => { loadCandles(); const iv = setInterval(loadCandles, 30000); return () => clearInterval(iv); }, [loadCandles]);
 
   // WS live price
   useEffect(() => {
-    const assetSym = CHART_TO_ASSET[chartSymbol] || assets[0]?.symbol;
-    if (!assetSym) return;
     ws.connect();
-    ws.subscribe(assetSym);
+    ws.subscribe(chartSymbol);
     const unsub: () => void = ws.onMessage((msg: any) => {
-      if (msg.type === 'TRADE_PRINT' && msg.symbol === assetSym) {
-        const price = Number(msg.price) * INR_SCALE;
+      if (msg.type === 'TRADE_PRINT' && msg.symbol === chartSymbol) {
+        const price = Number(msg.price);
         setCurrentPrice(price);
         if (['1m', '5m'].includes(candleIntervalRef.current)) {
           setCandles(prev => {
@@ -503,16 +517,16 @@ export default function PortfolioPage() {
       }
     });
     return () => unsub();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chartSymbol, assets]);
+  }, [chartSymbol]);
 
   // ── Live holdings derived from API state ─────────────────────────
   const liveHoldings = holdings.map((h: any) => {
     const asset = assets.find((a: any) => a.symbol === h.asset_symbol);
-    const mkt_price = asset?.current_price || (h.market_value / (h.quantity || 1));
-    const invested  = h.avg_cost_basis * h.quantity;
-    const pnl       = h.market_value - invested;
-    const pnl_pct   = invested > 0 ? (pnl / invested) * 100 : 0;
+    const mkt_price  = asset?.current_price || h.avg_cost_basis;
+    const market_value = mkt_price * h.quantity;
+    const invested   = h.avg_cost_basis * h.quantity;
+    const pnl        = market_value - invested;
+    const pnl_pct    = invested > 0 ? (pnl / invested) * 100 : 0;
     const trend     = Array.from({ length: 14 }, (_: any, i: number) => {
       const t = i / 13;
       return parseFloat((h.avg_cost_basis + (mkt_price - h.avg_cost_basis) * t).toFixed(2));
@@ -523,7 +537,7 @@ export default function PortfolioPage() {
       exchange: 'NSE',
       quantity: h.quantity,
       avg_cost_basis: h.avg_cost_basis,
-      market_value: h.market_value,
+      market_value,
       mkt_price,
       invested,
       pnl,
@@ -531,6 +545,19 @@ export default function PortfolioPage() {
       trend,
     };
   });
+
+  // ── Sector allocation from actual holdings ───────────────────────
+  const sectorTotals: Record<string, number> = {};
+  liveHoldings.forEach((h: any) => {
+    const sector = SYMBOL_SECTOR[h.asset_symbol] || 'Other';
+    sectorTotals[sector] = (sectorTotals[sector] || 0) + h.market_value;
+  });
+  const totalHoldingsVal = Object.values(sectorTotals).reduce((s, v) => s + v, 0) || 1;
+  const liveSectors = Object.entries(sectorTotals).map(([label, val]) => ({
+    label,
+    value: parseFloat(((val / totalHoldingsVal) * 100).toFixed(1)),
+    color: SECTOR_COLORS[label] || '#64748b',
+  }));
 
   // ── Derived values ────────────────────────────────────────────────
   const totalCash     = (portfolio?.cash_balance || 100000);
@@ -559,7 +586,8 @@ export default function PortfolioPage() {
       <TopStatsCards
         totalValue={totalValue}
         totalCash={totalCash}
-        unrealizedPnl={pnl?.total_pnl || -51167.35} // Provide a default matching the design mock if null
+        realizedPnl={pnl?.realized_pnl ?? 0}
+        unrealizedPnl={pnl?.unrealized_pnl ?? 0}
       />
 
       <div className="pf-main-grid">
@@ -729,10 +757,10 @@ export default function PortfolioPage() {
           <div className="pf-card pf-sector">
             <span className="pf-card-title">Sector Allocation</span>
             <div className="pf-donut-wrap">
-              <DonutChart segments={SECTORS} hoveredIdx={hoveredSector} onHover={setHoveredSector} />
+              <DonutChart segments={liveSectors} hoveredIdx={hoveredSector} onHover={setHoveredSector} />
             </div>
             <div className="pf-sector-legend">
-              {SECTORS.map((s, i) => (
+              {liveSectors.map((s, i) => (
                 <div
                   key={s.label}
                   className="pf-legend-row"

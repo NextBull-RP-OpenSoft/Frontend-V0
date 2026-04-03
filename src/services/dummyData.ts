@@ -23,16 +23,91 @@ const ASSETS = [
   { symbol: 'TATAMOTORS', name: 'Tata Motors Ltd',       initial_price: 1000.00, mu: 0.00006, sigma: 0.018 },
 ];
 
-// Live-like prices that drift over time
+// ---------- INTERVAL MAP (extended) ----------
+const INTERVAL_MS: Record<string, number> = {
+  '1s':  1_000,
+  '5s':  5_000,
+  '1m':  60_000,
+  '5m':  300_000,
+  '1h':  3_600_000,
+  '1d':  86_400_000,
+};
+
+// Live-like prices that drift over time (seeded by history generation below)
 const priceState: Record<string, number> = {};
 ASSETS.forEach(a => { priceState[a.symbol] = a.initial_price; });
+
+// ---------- GBM CANDLE ENGINE ----------
+// Box-Muller Gaussian sample
+function gauss(): number {
+  let u = 0, v = 0;
+  while (u === 0) u = Math.random();
+  while (v === 0) v = Math.random();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+
+// Simulate one candle by walking `steps` GBM sub-steps within the period.
+// Guarantees: high >= max(open,close), low <= min(open,close), open == prev close.
+function gbmCandle(
+  open: number, mu: number, sigma: number, dtDays: number, steps = 20
+): { open: number; high: number; low: number; close: number } {
+  const subDt = dtDays / steps;
+  const drift = (mu - 0.5 * sigma * sigma) * subDt;
+  const vol   = sigma * Math.sqrt(subDt);
+  let price = open;
+  let high  = open;
+  let low   = open;
+  for (let i = 0; i < steps; i++) {
+    price *= Math.exp(drift + vol * gauss());
+    if (price > high) high = price;
+    if (price < low)  low  = price;
+  }
+  return { open, high, low, close: price };
+}
+
+// ---------- PRE-GENERATED 1-YEAR CANDLE HISTORY ----------
+const candleHistory: Map<string, Map<string, any[]>> = new Map();
+
+function buildHistory(symbol: string, interval: string, count: number): any[] {
+  const asset = ASSETS.find(a => a.symbol === symbol)!;
+  const intervalMs = INTERVAL_MS[interval];
+  const dtDays = intervalMs / 86_400_000;
+  const now = Date.now();
+  const candles: any[] = [];
+  let price = asset.initial_price * (0.70 + Math.random() * 0.20);
+  for (let i = count; i >= 0; i--) {
+    const c = gbmCandle(price, asset.mu, asset.sigma, dtDays, 20);
+    price = c.close;
+    const openTime = now - i * intervalMs;
+    candles.push({
+      open:  parseFloat(c.open.toFixed(2)),
+      high:  parseFloat(c.high.toFixed(2)),
+      low:   parseFloat(c.low.toFixed(2)),
+      close: parseFloat(c.close.toFixed(2)),
+      volume: randomInt(5_000, 1_000_000),
+      open_time:  nanoTimestamp(new Date(openTime)),
+      close_time: nanoTimestamp(new Date(openTime + intervalMs)),
+    });
+  }
+  priceState[symbol] = price;
+  return candles;
+}
+
+ASSETS.forEach(a => {
+  const sym = new Map<string, any[]>();
+  sym.set('1d', buildHistory(a.symbol, '1d', 365));
+  sym.set('1h', buildHistory(a.symbol, '1h', 720));
+  candleHistory.set(a.symbol, sym);
+});
 
 function getCurrentPrice(symbol: string) {
   const asset = ASSETS.find(a => a.symbol === symbol);
   if (!asset) return 0;
-  const drift = (asset.mu - 0.5 * asset.sigma * asset.sigma) * 0.01;
-  const diffusion = asset.sigma * (Math.random() - 0.5) * 0.1;
-  priceState[symbol] *= Math.exp(drift + diffusion);
+  // dt = 0.5s expressed in days
+  const dt = 0.5 / 86_400;
+  const drift = (asset.mu - 0.5 * asset.sigma * asset.sigma) * dt;
+  const vol   = asset.sigma * Math.sqrt(dt) * gauss();
+  priceState[symbol] *= Math.exp(drift + vol);
   return priceState[symbol];
 }
 
@@ -91,34 +166,38 @@ export function getOrderBook(symbol: string) {
 
 // ---------- CANDLES (OHLCV) ----------
 export function getCandles(symbol: string, interval = '1m', count = 100) {
-  const basePrice = ASSETS.find(a => a.symbol === symbol)?.initial_price || 1000.00;
-  const intervalMs = { '1s': 1000, '5s': 5000, '1m': 60000, '5m': 300000 }[interval] || 60000;
-  const now = Date.now();
-  const candles: any[] = [];
-  let price = basePrice * (0.97 + Math.random() * 0.06);
-
-  for (let i = count; i >= 0; i--) {
-    const open = price;
-    const change = (Math.random() - 0.48) * basePrice * 0.002;
-    const close = open + change;
-    const high = Math.max(open, close) + Math.random() * Math.abs(change) * 0.5;
-    const low = Math.min(open, close) - Math.random() * Math.abs(change) * 0.5;
-    const volume = randomInt(5000, 1000000); // realistic share volume
-    const openTime = now - i * intervalMs;
-
-    candles.push({
-      open: parseFloat(open.toFixed(2)),
-      high: parseFloat(high.toFixed(2)),
-      low: parseFloat(low.toFixed(2)),
-      close: parseFloat(close.toFixed(2)),
-      volume,
-      open_time: nanoTimestamp(new Date(openTime)),
-      close_time: nanoTimestamp(new Date(openTime + intervalMs)),
-    });
-
-    price = close;
+  // Long intervals served from pre-generated history
+  if (interval === '1d' || interval === '1h') {
+    const history = candleHistory.get(symbol)?.get(interval) || [];
+    return history.slice(-Math.min(count, history.length));
   }
 
+  // Short intervals: generate fresh GBM candles from a back-extrapolated start price
+  const asset = ASSETS.find(a => a.symbol === symbol);
+  const mu    = asset?.mu    ?? 0.00005;
+  const sigma = asset?.sigma ?? 0.012;
+  const intervalMs = INTERVAL_MS[interval] || 60_000;
+  const dtDays = intervalMs / 86_400_000;
+  const now = Date.now();
+  const candles: any[] = [];
+  // Back-extrapolate so the walk ends near current priceState
+  let price = (priceState[symbol] || asset?.initial_price || 1000)
+    * Math.exp(-(mu - 0.5 * sigma * sigma) * count * dtDays);
+
+  for (let i = count; i >= 0; i--) {
+    const c = gbmCandle(price, mu, sigma, dtDays, 10);
+    price = c.close;
+    const openTime = now - i * intervalMs;
+    candles.push({
+      open:  parseFloat(c.open.toFixed(2)),
+      high:  parseFloat(c.high.toFixed(2)),
+      low:   parseFloat(c.low.toFixed(2)),
+      close: parseFloat(c.close.toFixed(2)),
+      volume: randomInt(5_000, 1_000_000),
+      open_time:  nanoTimestamp(new Date(openTime)),
+      close_time: nanoTimestamp(new Date(openTime + intervalMs)),
+    });
+  }
   return candles;
 }
 

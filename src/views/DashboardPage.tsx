@@ -88,13 +88,15 @@ export default function DashboardPage() {
 
                 if (nowMs >= closeTimeMs) {
                   // Current candle period has ended — start a new one
+                  // Open must equal previous close for a gapless chart
+                  const openPrice = last.close;
                   updated[updated.length - 1] = last;
                   const durMs = intervalMs[candleIntervalRef.current] || 60000;
                   const newOpen = last.close_time; // nanoseconds
                   updated.push({
-                    open: price,
-                    high: price,
-                    low: price,
+                    open: openPrice,
+                    high: Math.max(openPrice, price),
+                    low: Math.min(openPrice, price),
                     close: price,
                     volume: qty,
                     open_time: newOpen,

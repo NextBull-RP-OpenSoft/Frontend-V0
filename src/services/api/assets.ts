@@ -12,8 +12,8 @@ export async function getOrderBook(symbol: string): Promise<any> {
   return dummy.getOrderBook(symbol);
 }
 
-export async function getCandles(symbol: string, interval: string = '1m'): Promise<any> {
-  return dummy.getCandles(symbol, interval);
+export async function getCandles(symbol: string, interval: string = '1m', count?: number): Promise<any> {
+  return dummy.getCandles(symbol, interval, count);
 }
 
 export async function getAssetStats(symbol: string): Promise<any> {
