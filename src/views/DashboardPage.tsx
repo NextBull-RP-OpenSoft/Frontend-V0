@@ -77,18 +77,39 @@ export default function DashboardPage() {
             setCurrentPrice(price);
 
             // ── Live candle update ──────────────────────────────────
-            // Push the new tick price into the last candle so the chart
-            // shows real-time price movement without waiting for REST poll.
             if (['1s', '5s', '1m', '5m'].includes(candleIntervalRef.current)) {
+              const intervalMs: Record<string, number> = { '1s': 1000, '5s': 5000, '1m': 60000, '5m': 300000 };
               setCandles(prev => {
                 if (!prev || prev.length === 0) return prev;
                 const updated = [...prev];
                 const last = { ...updated[updated.length - 1] };
-                last.close = price;
-                if (price > last.high) last.high = price;
-                if (price < last.low) last.low = price;
-                last.volume = (last.volume || 0) + qty;
-                updated[updated.length - 1] = last;
+                const nowMs = Date.now();
+                const closeTimeMs = last.close_time / 1_000_000;
+
+                if (nowMs >= closeTimeMs) {
+                  // Current candle period has ended — start a new one
+                  // Open must equal previous close for a gapless chart
+                  const openPrice = last.close;
+                  updated[updated.length - 1] = last;
+                  const durMs = intervalMs[candleIntervalRef.current] || 60000;
+                  const newOpen = last.close_time; // nanoseconds
+                  updated.push({
+                    open: openPrice,
+                    high: Math.max(openPrice, price),
+                    low: Math.min(openPrice, price),
+                    close: price,
+                    volume: qty,
+                    open_time: newOpen,
+                    close_time: newOpen + durMs * 1_000_000,
+                  });
+                  if (updated.length > 300) updated.shift();
+                } else {
+                  last.close = price;
+                  if (price > last.high) last.high = price;
+                  if (price < last.low) last.low = price;
+                  last.volume = (last.volume || 0) + qty;
+                  updated[updated.length - 1] = last;
+                }
                 return updated;
               });
             }

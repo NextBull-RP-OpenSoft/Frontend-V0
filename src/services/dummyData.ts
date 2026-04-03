@@ -23,16 +23,91 @@ const ASSETS = [
   { symbol: 'TATAMOTORS', name: 'Tata Motors Ltd', initial_price: 1000.00, mu: 0.00006, sigma: 0.018 },
 ];
 
-// Live-like prices that drift over time
+// ---------- INTERVAL MAP (extended) ----------
+const INTERVAL_MS: Record<string, number> = {
+  '1s':  1_000,
+  '5s':  5_000,
+  '1m':  60_000,
+  '5m':  300_000,
+  '1h':  3_600_000,
+  '1d':  86_400_000,
+};
+
+// Live-like prices that drift over time (seeded by history generation below)
 const priceState: Record<string, number> = {};
 ASSETS.forEach(a => { priceState[a.symbol] = a.initial_price; });
+
+// ---------- GBM CANDLE ENGINE ----------
+// Box-Muller Gaussian sample
+function gauss(): number {
+  let u = 0, v = 0;
+  while (u === 0) u = Math.random();
+  while (v === 0) v = Math.random();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+
+// Simulate one candle by walking `steps` GBM sub-steps within the period.
+// Guarantees: high >= max(open,close), low <= min(open,close), open == prev close.
+function gbmCandle(
+  open: number, mu: number, sigma: number, dtDays: number, steps = 20
+): { open: number; high: number; low: number; close: number } {
+  const subDt = dtDays / steps;
+  const drift = (mu - 0.5 * sigma * sigma) * subDt;
+  const vol   = sigma * Math.sqrt(subDt);
+  let price = open;
+  let high  = open;
+  let low   = open;
+  for (let i = 0; i < steps; i++) {
+    price *= Math.exp(drift + vol * gauss());
+    if (price > high) high = price;
+    if (price < low)  low  = price;
+  }
+  return { open, high, low, close: price };
+}
+
+// ---------- PRE-GENERATED 1-YEAR CANDLE HISTORY ----------
+const candleHistory: Map<string, Map<string, any[]>> = new Map();
+
+function buildHistory(symbol: string, interval: string, count: number): any[] {
+  const asset = ASSETS.find(a => a.symbol === symbol)!;
+  const intervalMs = INTERVAL_MS[interval];
+  const dtDays = intervalMs / 86_400_000;
+  const now = Date.now();
+  const candles: any[] = [];
+  let price = asset.initial_price * (0.70 + Math.random() * 0.20);
+  for (let i = count; i >= 0; i--) {
+    const c = gbmCandle(price, asset.mu, asset.sigma, dtDays, 20);
+    price = c.close;
+    const openTime = now - i * intervalMs;
+    candles.push({
+      open:  parseFloat(c.open.toFixed(2)),
+      high:  parseFloat(c.high.toFixed(2)),
+      low:   parseFloat(c.low.toFixed(2)),
+      close: parseFloat(c.close.toFixed(2)),
+      volume: randomInt(5_000, 1_000_000),
+      open_time:  nanoTimestamp(new Date(openTime)),
+      close_time: nanoTimestamp(new Date(openTime + intervalMs)),
+    });
+  }
+  priceState[symbol] = price;
+  return candles;
+}
+
+ASSETS.forEach(a => {
+  const sym = new Map<string, any[]>();
+  sym.set('1d', buildHistory(a.symbol, '1d', 365));
+  sym.set('1h', buildHistory(a.symbol, '1h', 720));
+  candleHistory.set(a.symbol, sym);
+});
 
 function getCurrentPrice(symbol: string) {
   const asset = ASSETS.find(a => a.symbol === symbol);
   if (!asset) return 0;
-  const drift = (asset.mu - 0.5 * asset.sigma * asset.sigma) * 0.01;
-  const diffusion = asset.sigma * (Math.random() - 0.5) * 0.1;
-  priceState[symbol] *= Math.exp(drift + diffusion);
+  // dt = 0.5s expressed in days
+  const dt = 0.5 / 86_400;
+  const drift = (asset.mu - 0.5 * asset.sigma * asset.sigma) * dt;
+  const vol   = asset.sigma * Math.sqrt(dt) * gauss();
+  priceState[symbol] *= Math.exp(drift + vol);
   return priceState[symbol];
 }
 
@@ -40,6 +115,7 @@ export function getAssets() {
   return ASSETS.map(a => ({
     symbol: a.symbol,
     name: a.name,
+    initial_price: a.initial_price,
     current_price: parseFloat(getCurrentPrice(a.symbol).toFixed(2)),
   }));
 }
@@ -90,34 +166,38 @@ export function getOrderBook(symbol: string) {
 
 // ---------- CANDLES (OHLCV) ----------
 export function getCandles(symbol: string, interval = '1m', count = 100) {
-  const basePrice = ASSETS.find(a => a.symbol === symbol)?.initial_price || 1000.00;
-  const intervalMs = { '1s': 1000, '5s': 5000, '1m': 60000, '5m': 300000 }[interval] || 60000;
-  const now = Date.now();
-  const candles: any[] = [];
-  let price = basePrice * (0.97 + Math.random() * 0.06);
-
-  for (let i = count; i >= 0; i--) {
-    const open = price;
-    const change = (Math.random() - 0.48) * basePrice * 0.002;
-    const close = open + change;
-    const high = Math.max(open, close) + Math.random() * Math.abs(change) * 0.5;
-    const low = Math.min(open, close) - Math.random() * Math.abs(change) * 0.5;
-    const volume = randomInt(5000, 1000000); // realistic share volume
-    const openTime = now - i * intervalMs;
-
-    candles.push({
-      open: parseFloat(open.toFixed(2)),
-      high: parseFloat(high.toFixed(2)),
-      low: parseFloat(low.toFixed(2)),
-      close: parseFloat(close.toFixed(2)),
-      volume,
-      open_time: nanoTimestamp(new Date(openTime)),
-      close_time: nanoTimestamp(new Date(openTime + intervalMs)),
-    });
-
-    price = close;
+  // Long intervals served from pre-generated history
+  if (interval === '1d' || interval === '1h') {
+    const history = candleHistory.get(symbol)?.get(interval) || [];
+    return history.slice(-Math.min(count, history.length));
   }
 
+  // Short intervals: generate fresh GBM candles from a back-extrapolated start price
+  const asset = ASSETS.find(a => a.symbol === symbol);
+  const mu    = asset?.mu    ?? 0.00005;
+  const sigma = asset?.sigma ?? 0.012;
+  const intervalMs = INTERVAL_MS[interval] || 60_000;
+  const dtDays = intervalMs / 86_400_000;
+  const now = Date.now();
+  const candles: any[] = [];
+  // Back-extrapolate so the walk ends near current priceState
+  let price = (priceState[symbol] || asset?.initial_price || 1000)
+    * Math.exp(-(mu - 0.5 * sigma * sigma) * count * dtDays);
+
+  for (let i = count; i >= 0; i--) {
+    const c = gbmCandle(price, mu, sigma, dtDays, 10);
+    price = c.close;
+    const openTime = now - i * intervalMs;
+    candles.push({
+      open:  parseFloat(c.open.toFixed(2)),
+      high:  parseFloat(c.high.toFixed(2)),
+      low:   parseFloat(c.low.toFixed(2)),
+      close: parseFloat(c.close.toFixed(2)),
+      volume: randomInt(5_000, 1_000_000),
+      open_time:  nanoTimestamp(new Date(openTime)),
+      close_time: nanoTimestamp(new Date(openTime + intervalMs)),
+    });
+  }
   return candles;
 }
 
@@ -164,16 +244,38 @@ export function getOrderById(orderId: string) {
 }
 
 export function submitOrder(order: any) {
+  const sym: string = order.asset_symbol;
+  const qty: number = parseInt(order.quantity, 10) || 0;
+  const execPrice: number = order.price > 0 ? order.price : (priceState[sym] || 1000);
+  const cost = execPrice * qty;
+
+  if (order.side === 'buy') {
+    portfolioState.cash_balance -= cost;
+    if (!holdingsState[sym]) holdingsState[sym] = { quantity: 0, avg_cost_basis: execPrice };
+    const h = holdingsState[sym];
+    const newAvg = (h.avg_cost_basis * h.quantity + cost) / (h.quantity + qty);
+    h.quantity += qty;
+    h.avg_cost_basis = newAvg;
+  } else if (order.side === 'sell') {
+    const h = holdingsState[sym];
+    if (h && h.quantity >= qty) {
+      portfolioState.realized_pnl += (execPrice - h.avg_cost_basis) * qty;
+      portfolioState.cash_balance += cost;
+      h.quantity -= qty;
+    }
+  }
+
   const newOrder = {
     id: uuid(),
     ...order,
-    filled_quantity: 0,
-    status: 'submitted',
+    price: execPrice,
+    filled_quantity: qty,
+    status: 'filled',
     created_at: nanoTimestamp(),
     updated_at: nanoTimestamp(),
   };
   if (mockOrders) mockOrders.unshift(newOrder);
-  return { id: newOrder.id, status: 'submitted' };
+  return { id: newOrder.id, status: 'filled' };
 }
 
 export function cancelOrder(orderId: string) {
@@ -216,44 +318,51 @@ export function getPublicTrades() {
   return generateTrades().map(({ buy_order_id, sell_order_id, ...rest }) => rest);
 }
 
-// ---------- PORTFOLIO ----------
+// ---------- PORTFOLIO (mutable state) ----------
+const portfolioState = {
+  cash_balance: 574320.56,
+  realized_pnl: 12450.80,
+};
+
+interface Holding { quantity: number; avg_cost_basis: number; }
+const holdingsState: Record<string, Holding> = {
+  RELIANCE: { quantity: 100, avg_cost_basis: 2420.00 },
+  TCS:      { quantity: 50,  avg_cost_basis: 3580.00 },
+  HDFCBANK: { quantity: 200, avg_cost_basis: 1450.00 },
+};
+
 export function getPortfolio() {
+  const unrealized = Object.entries(holdingsState).reduce((sum, [sym, h]) => {
+    return sum + (priceState[sym] - h.avg_cost_basis) * h.quantity;
+  }, 0);
   return {
-    user_id: 'user-' + uuid().slice(0, 8),
-    cash_balance: 574320.56,
-    realized_pnl: 12450.80,
-    unrealized_pnl: -3820.15,
+    user_id: 'user-dandip',
+    cash_balance: parseFloat(portfolioState.cash_balance.toFixed(2)),
+    realized_pnl: parseFloat(portfolioState.realized_pnl.toFixed(2)),
+    unrealized_pnl: parseFloat(unrealized.toFixed(2)),
   };
 }
 
 export function getHoldings() {
-  return [
-    {
-      asset_symbol: 'RELIANCE',
-      quantity: 100,
-      avg_cost_basis: 2420.00,
-      market_value: parseFloat((priceState.RELIANCE * 100).toFixed(2)),
-    },
-    {
-      asset_symbol: 'TCS',
-      quantity: 50,
-      avg_cost_basis: 3580.00,
-      market_value: parseFloat((priceState.TCS * 50).toFixed(2)),
-    },
-    {
-      asset_symbol: 'HDFCBANK',
-      quantity: 200,
-      avg_cost_basis: 1450.00,
-      market_value: parseFloat((priceState.HDFCBANK * 200).toFixed(2)),
-    },
-  ];
+  return Object.entries(holdingsState)
+    .filter(([, h]) => h.quantity > 0)
+    .map(([sym, h]) => ({
+      asset_symbol: sym,
+      quantity: h.quantity,
+      avg_cost_basis: parseFloat(h.avg_cost_basis.toFixed(2)),
+      market_value: parseFloat((priceState[sym] * h.quantity).toFixed(2)),
+    }));
 }
 
 export function getPnL() {
+  const unrealized = Object.entries(holdingsState).reduce((sum, [sym, h]) => {
+    return sum + (priceState[sym] - h.avg_cost_basis) * h.quantity;
+  }, 0);
+  const total = portfolioState.realized_pnl + unrealized;
   return {
-    realized_pnl: 12450.80,
-    unrealized_pnl: -3820.15,
-    total_pnl: 8630.65,
+    realized_pnl: parseFloat(portfolioState.realized_pnl.toFixed(2)),
+    unrealized_pnl: parseFloat(unrealized.toFixed(2)),
+    total_pnl: parseFloat(total.toFixed(2)),
   };
 }
 
