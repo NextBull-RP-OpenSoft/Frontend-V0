@@ -8,11 +8,12 @@ import CandlestickChart from '../components/CandlestickChart';
 import OrderBook from '../components/OrderBook';
 import OrderPanel from '../components/OrderPanel';
 import TradeHistory from '../components/TradeHistory';
-import PortfolioWidget from '../components/PortfolioWidget';
 import './DashboardPage.css';
 
 export default function DashboardPage() {
-  const { selectedSymbol, setMarketStats, isOrderActive } = useMarket();
+  const { selectedSymbol, setMarketStats, isOrderActive, setIsOrderActive } = useMarket();
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showOrderPanel, setShowOrderPanel] = useState(false);
   const [candles, setCandles] = useState([]);
   const [orderBook, setOrderBook] = useState(null);
   const [trades, setTrades] = useState([]);
@@ -174,14 +175,26 @@ export default function DashboardPage() {
   if (!selectedSymbol) return null;
 
   return (
-    <div className="dashboard-page" id="dashboard-page">
+    <div className={`dashboard-page ${isFullscreen ? 'is-fullscreen' : ''}`} id="dashboard-page">
       <div className={`dashboard-grid ${isOrderActive ? 'order-active' : ''}`}>
-        <div className="dashboard-chart">
+        <div className={`dashboard-chart ${isFullscreen && showOrderPanel ? 'panel-open' : ''}`}>
           <CandlestickChart
             candles={candles}
             interval={candleInterval}
             onIntervalChange={setCandleInterval}
             symbol={selectedSymbol}
+            isFullscreen={isFullscreen}
+            onToggleFullscreen={() => setIsFullscreen(prev => !prev)}
+            extraControls={
+              isFullscreen && !showOrderPanel && (
+                <button
+                  onClick={() => setShowOrderPanel(true)}
+                  className="dashboard-fs-place-order-btn"
+                >
+                  Place Order
+                </button>
+              )
+            }
           />
         </div>
 
@@ -199,18 +212,25 @@ export default function DashboardPage() {
             currentPrice={currentPrice}
             onSubmitOrder={handleSubmitOrder}
             cashBalance={portfolio?.cash_balance}
+            onClose={() => setIsOrderActive(false)}
           />
         </div>
 
-        <div className="dashboard-portfolio">
-          <PortfolioWidget
-            portfolio={portfolio}
-            holdings={holdings}
-            pnl={pnl}
-            compact={true}
+
+      </div>
+
+      {/* Fullscreen Sliding Order Panel */}
+      {isFullscreen && (
+        <div className={`dashboard-fs-order-drawer ${showOrderPanel ? 'open' : ''}`}>
+          <OrderPanel
+            symbol={selectedSymbol}
+            currentPrice={currentPrice}
+            onSubmitOrder={handleSubmitOrder}
+            cashBalance={portfolio?.cash_balance}
+            onClose={() => setShowOrderPanel(false)}
           />
         </div>
-      </div>
+      )}
     </div>
   );
 }

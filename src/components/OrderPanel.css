@@ -12,8 +12,13 @@
 }
 
 /* ── Accent border top based on side ── */
-.op-buy  { border-top: 2px solid var(--color-buy); }
-.op-sell { border-top: 2px solid var(--color-sell); }
+.op-buy {
+  border-top: 2px solid var(--color-buy);
+}
+
+.op-sell {
+  border-top: 2px solid var(--color-sell);
+}
 
 /* ================================================
    HEADER
@@ -69,8 +74,17 @@
 }
 
 @keyframes liveBlip {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50%       { opacity: 0.3; transform: scale(0.7); }
+
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.3;
+    transform: scale(0.7);
+  }
 }
 
 /* ================================================
@@ -102,7 +116,30 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 5px;
+  padding: 9px 12px;
+  border-radius: calc(var(--radius-md) - 2px);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  transition: background var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+/* Inactive states — show semantic color so they're visible in light mode */
+.op-buy-btn {
+  color: var(--color-buy);
+}
+
+.op-sell-btn {
+  color: var(--color-sell);
+}
+
+.op-buy-btn:hover {
+  color: var(--color-buy-dim);
+}
+
+.op-sell-btn:hover {
+  color: var(--color-sell-dim);
 }
 
 .op-buy-btn.active {
@@ -136,7 +173,9 @@
   transition: all var(--transition-fast);
 }
 
-.op-type-tab:hover { color: var(--text-primary); }
+.op-type-tab:hover {
+  color: var(--text-primary);
+}
 
 .op-type-tab.active {
   background: var(--bg-elevated);
@@ -310,7 +349,9 @@
   outline: none;
 }
 
-.op-input-wrap .op-input { padding-left: 24px; }
+.op-input-wrap .op-input {
+  padding-left: 24px;
+}
 
 
 
@@ -338,7 +379,9 @@
   font-weight: 700;
 }
 
-.op-insufficient { color: var(--color-sell) !important; }
+.op-insufficient {
+  color: var(--color-sell) !important;
+}
 
 .op-insufficient-flag {
   font-size: var(--text-xs);
@@ -369,6 +412,7 @@
   background: var(--color-buy);
   color: #fff;
 }
+
 .op-submit-buy:hover:not(:disabled) {
   background: var(--color-buy-dim);
   transform: translateY(-1px);
@@ -378,6 +422,7 @@
   background: var(--color-sell);
   color: #fff;
 }
+
 .op-submit-sell:hover:not(:disabled) {
   background: var(--color-sell-dim);
   transform: translateY(-1px);
@@ -400,14 +445,16 @@
 .op-spinner {
   width: 14px;
   height: 14px;
-  border: 2px solid rgba(255,255,255,0.3);
+  border: 2px solid rgba(255, 255, 255, 0.3);
   border-top-color: #fff;
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* ================================================
@@ -426,8 +473,15 @@
 }
 
 @keyframes feedbackSlide {
-  from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .op-feedback-success {
@@ -546,5 +600,12 @@
    BTN UTILITIES (matching global App.css)
    ================================================ */
 
-.btn-buy  { background: var(--color-buy);  color: #fff; }
-.btn-sell { background: var(--color-sell); color: #fff; }
+.btn-buy {
+  background: var(--color-buy);
+  color: #fff;
+}
+
+.btn-sell {
+  background: var(--color-sell);
+  color: #fff;
+}

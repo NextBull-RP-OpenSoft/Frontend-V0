@@ -79,10 +79,6 @@ export default function Navbar() {
         <button className="theme-toggle" onClick={toggleTheme} title="Toggle theme" id="btn-theme-toggle">
           {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
         </button>
-        <div className="nav-status">
-          <span className="status-dot"></span>
-          Live
-        </div>
       </div>
     </header>
   );

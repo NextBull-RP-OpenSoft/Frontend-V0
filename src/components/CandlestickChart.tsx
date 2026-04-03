@@ -9,13 +9,12 @@ import './CandlestickChart.css';
 
 const INTERVALS = ['1s', '5s', '1m', '5m'];
 
-export default function CandlestickChart({ candles, interval, onIntervalChange, symbol }) {
-  const containerRef = useRef(null);
-  const engineRef = useRef(null);
+export default function CandlestickChart({ candles, interval, onIntervalChange, symbol, isFullscreen, onToggleFullscreen, extraControls, activeTool, onHoverCandle, command, hideTooltip }: any) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const engineRef = useRef<any>(null);
   const [tooltipData, setTooltipData] = useState(null);
   const [showSMA, setShowSMA] = useState(true);
   const [showEMA, setShowEMA] = useState(true);
-  const [isFullscreen, setIsFullscreen] = useState(false);
   const { assets, symbolLoading } = useMarket();
 
   // Get company name for subtitle
@@ -24,28 +23,13 @@ export default function CandlestickChart({ candles, interval, onIntervalChange, 
 
   const handleTooltip = useCallback((data) => {
     setTooltipData(data);
-  }, []);
-
-  // Fullscreen effect
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape' && isFullscreen) {
-        setIsFullscreen(false);
-      }
-    };
-    if (isFullscreen) {
-      window.addEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'auto';
+    if (onHoverCandle) {
+      onHoverCandle(data?.candle || null);
     }
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = 'auto';
-    };
-  }, [isFullscreen]);
+  }, [onHoverCandle]);
 
-  // Handle resize on fullscreen toggle
+  // Fullscreen effect logic moved to parent DashboardPage, 
+  // but we still want resize event when it toggles.
   useEffect(() => {
     if (engineRef.current) {
       setTimeout(() => engineRef.current.resize(), 50);
@@ -83,6 +67,13 @@ export default function CandlestickChart({ candles, interval, onIntervalChange, 
     engineRef.current.setIndicators(sma, ema);
   }, [candles]);
 
+  // Sync activeTool state
+  useEffect(() => {
+    if (engineRef.current && activeTool) {
+      engineRef.current.setActiveTool(activeTool);
+    }
+  }, [activeTool]);
+
   // Update MA visibility
   useEffect(() => {
     if (!engineRef.current) return;
@@ -103,7 +94,34 @@ export default function CandlestickChart({ candles, interval, onIntervalChange, 
     return () => observer.disconnect();
   }, []);
 
-  const formatPrice = (p) => {
+  // Handle command (undo, redo, clear, snapshot)
+  useEffect(() => {
+    if (engineRef.current && command) {
+      const { cmd } = command;
+      if (cmd === 'undo' && engineRef.current.undo) {
+        engineRef.current.undo();
+      } else if (cmd === 'redo' && engineRef.current.redo) {
+        engineRef.current.redo();
+      } else if (cmd === 'deleteAll' && engineRef.current.clearDrawings) {
+        engineRef.current.clearDrawings();
+      } else if (cmd === 'snapshot') {
+        try {
+          const mainCanvas = engineRef.current.mainCanvas;
+          if (mainCanvas) {
+             const url = mainCanvas.toDataURL('image/png');
+             const a = document.createElement('a');
+             a.href = url;
+             a.download = `chart-snapshot-${symbol}.png`;
+             a.click();
+          }
+        } catch (e) {
+          console.error("Failed to take snapshot", e);
+        }
+      }
+    }
+  }, [command, symbol]);
+
+  const formatPrice = (p: any) => {
     return '₹' + p.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
@@ -126,7 +144,7 @@ export default function CandlestickChart({ candles, interval, onIntervalChange, 
   const isUp = tooltipCandle ? tooltipCandle.close >= tooltipCandle.open : true;
 
   return (
-    <div className={`chart-container card ${isFullscreen ? 'fullscreen-mode' : ''}`} id="candlestick-chart">
+    <div className={`chart-container card`} id="candlestick-chart">
       <div className="chart-header">
         <div className="chart-title">
           <div className="chart-title-row">
@@ -136,6 +154,7 @@ export default function CandlestickChart({ candles, interval, onIntervalChange, 
           <span className="chart-subtitle">Candlestick · Stock Chart</span>
         </div>
         <div className="chart-controls">
+          {extraControls}
           <div className="ma-toggles">
             <label className="ma-toggle">
               <input type="checkbox" checked={showSMA} onChange={(e) => setShowSMA(e.target.checked)} />
@@ -164,9 +183,9 @@ export default function CandlestickChart({ candles, interval, onIntervalChange, 
       <div className={`chart-body ${symbolLoading ? 'chart-loading' : ''}`} ref={containerRef}>
         {/* Fullscreen Toggle Button */}
         {!symbolLoading && (
-          <button 
+          <button
             className={`chart-fullscreen-btn ${isFullscreen ? 'is-fullscreen' : ''}`}
-            onClick={() => setIsFullscreen(prev => !prev)}
+            onClick={() => onToggleFullscreen && onToggleFullscreen()}
             aria-label="Toggle Fullscreen"
             title={isFullscreen ? "Exit Fullscreen (Esc)" : "Fullscreen"}
           >
@@ -190,7 +209,7 @@ export default function CandlestickChart({ candles, interval, onIntervalChange, 
         )}
 
         {/* Tooltip overlay */}
-        {!symbolLoading && tooltipCandle && tooltipData && (
+        {!symbolLoading && tooltipCandle && tooltipData && !hideTooltip && (
           <div
             className="chart-tooltip"
             style={{

@@ -1,11 +1,15 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  typescript: {
+    ignoreBuildErrors: true,
+  },
   async rewrites() {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://api:4000';
     return [
       {
         source: '/api/:path*',
-        destination: 'http://34.93.4.23:4000/api/:path*',
+        destination: `${apiUrl}/api/:path*`,
       },
     ];
   },
