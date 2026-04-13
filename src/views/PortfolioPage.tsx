@@ -742,6 +742,9 @@ export default function PortfolioPage() {
                 interval={candleInterval}
                 onIntervalChange={setCandleInterval}
                 symbol={chartSymbol}
+                isFullscreen={false}
+                onToggleFullscreen={() => {}}
+                extraControls={null}
               />
             </div>
           </div>
@@ -789,13 +792,12 @@ export default function PortfolioPage() {
               ))}
             </div>
           </div>
+          {/* Portfolio Analysis — sits just below Sector Allocation */}
+          <PortfolioAnalysisChart />
 
         </div>{/* end pf-right-col */}
 
       </div>{/* end pf-main-grid */}
-
-      {/* ── Portfolio Analysis ────────────────────────── */}
-      <PortfolioAnalysisChart />
 
     </div>
   );
